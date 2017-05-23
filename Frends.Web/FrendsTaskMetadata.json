@@ -1,0 +1,9 @@
+﻿{
+  "Tasks": [
+    {
+      "TaskMethod": "Frends.Web.Web.HttpRequest"
+    },
+    {
+        "TaskMethod": "Frends.Web.Web.RestRequest"
+    }]
+}
