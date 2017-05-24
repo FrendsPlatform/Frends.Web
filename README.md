@@ -79,13 +79,11 @@ If the response is not valid json the task will throw an JsonReaderException wit
 | Token                            | string                             | Token to be used in an OAuth request. The token will be added as a Authentication header. `Authorization Bearer '{Token}'` |
 
 #### Result
-The result will be a Object with the following properties:
-
-JToken Body - Response Body
-
-Dictionary<string,string> Headers - Response Headers
-
-int StatusCode - Response status code
+| Property          | Type          | Description        |
+|-------------------|---------------|--------------------|
+| Body              | JToken        | Response Body      |
+| Headers           | Dictionary<string,string> | Response Headers |
+| StatusCode        | int           | Response status code | 
 
 ### Web.HttpRequest
 HttpRequest accepts any type of string response. E.g. xml and csv
@@ -112,13 +110,11 @@ HttpRequest accepts any type of string response. E.g. xml and csv
 | Token                            | string                             | Token to be used in an OAuth request. The token will be added as a Authentication header. `Authorization Bearer '{Token}'` |
 
 #### Result
-The result will be a Object with the following properties:
-
-string Body - Response Body
-
-Dictionary<string,string> Headers - Response Headers
-
-int StatusCode - Response status code
+| Property          | Type          | Description        |
+|-------------------|---------------|--------------------|
+| Body              | string        | Response Body      |
+| Headers           | Dictionary<string,string> | Response Headers |
+| StatusCode        | int           | Response status code | 
 
 ## License
 
