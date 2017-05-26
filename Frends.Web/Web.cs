@@ -131,7 +131,7 @@ namespace Frends.Web
     public class Web
     {
         /// <summary>
-        /// For a more detailed documentation see: https://bitbucket.org/hiqfinland/frends.web#markdown-header-webrestrequest
+        /// For a more detailed documentation see: https://github.com/FrendsPlatform/Frends.Web
         /// </summary>
         /// <param name="input">Input parameters</param>
         /// <param name="options">Optional parameters with default values</param>
@@ -168,7 +168,7 @@ namespace Frends.Web
         }
 
         /// <summary>
-        /// For a more detailed documentation see: https://bitbucket.org/hiqfinland/frends.web#markdown-header-webhttprequest
+        /// For a more detailed documentation see: https://github.com/FrendsPlatform/Frends.Web
         /// </summary>
         /// <param name="input">Input parameters</param>
         /// <param name="options">Optional parameters with default values</param>
