@@ -123,7 +123,7 @@ namespace Frends.Web
 
     public class RestResponse
     {
-        public JToken Body { get; set; }
+        public object Body { get; set; }
         public Dictionary<string, string> Headers { get; set; }
         public int StatusCode { get; set; }
     }
@@ -267,7 +267,7 @@ namespace Frends.Web
             }
         }
 
-        private static JToken TryParseRequestStringResultAsJToken(string response)
+        private static object TryParseRequestStringResultAsJToken(string response)
         {
             try
             {
