@@ -137,8 +137,8 @@ namespace Frends.Web.Tests
             var input = new Input { Method = Method.Get, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
             var options = new Options { ConnectionTimeoutSeconds = 60, Authentication = Authentication.OAuth, Token = "fooToken" };
             var result = (RestResponse) await Web.RestRequest(input, options, CancellationToken.None);
-   
-            Assert.That(result.Body["Foo"], Is.EqualTo(new JValue("Bar")));
+            var resultBody = result.Body as JToken;
+            Assert.That(resultBody["Foo"], Is.EqualTo(new JValue("Bar")));
         }
 
 
@@ -157,8 +157,8 @@ namespace Frends.Web.Tests
             var input = new Input { Method = Method.Get, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
             var options = new Options { ConnectionTimeoutSeconds = 30, AllowInvalidResponseContentTypeCharSet = true};
             var result = (RestResponse)await Web.RestRequest(input, options, CancellationToken.None);
-
-            Assert.That(result.Body["Foo"], Is.EqualTo(new JValue("Bar")));
+            var resultBody = result.Body as JToken;
+            Assert.That(resultBody["Foo"], Is.EqualTo(new JValue("Bar")));
         }
 
 
