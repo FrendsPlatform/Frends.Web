@@ -68,7 +68,7 @@ If the response is not valid json the task will throw an JsonReaderException wit
 #### Options
 | Property                         | Type                               | Description                                                         |
 |----------------------------------|------------------------------------|---------------------------------------------------------------------|
-| Authentication                   | Enum(None, Basic, Windows,WindowsIntegratedSecurity, OAuth ) | Different options for authentication for the HTTP request.   |
+| Authentication                   | Enum(None, Basic, Windows,WindowsIntegratedSecurity, OAuth, ClientCertificate ) | Different options for authentication for the HTTP request.   |
 | Connection Timeout Seconds       | int                                | Timeout in seconds to be used for the connection and operation. Default is 30 seconds. |
 | Follow Redirects                 | bool                               | If FollowRedirects is set to false, all responses with an HTTP status code from 300 to 399 is returned to the application. Default is true.|
 | Allow Invalid Certificate        | bool                               | Do not throw an exception on certificate error. Setting this to true is discouraged in production. |
@@ -77,6 +77,7 @@ If the response is not valid json the task will throw an JsonReaderException wit
 | Username                         | string                             | This field is available for Basic- and Windows Authentication. If Windows Authentication is selected Username needs to be of format domain\username. Basic authentication will add a base64 encoded Authorization header consisting of Username and password fields. |
 | Password                         | string                             | This field is available for Basic- and Windows Authentication.  |
 | Token                            | string                             | Token to be used in an OAuth request. The token will be added as a Authentication header. `Authorization Bearer '{Token}'` |
+| CertificateThumbprint            | string                             | This field is used with Client Certificate Authentication. The certificate needs to be found in Cert\CurrentUser\My store on the agent running the process |
 
 #### Result
 | Property          | Type          | Description        |
@@ -99,7 +100,7 @@ HttpRequest accepts any type of string response. E.g. xml and csv
 #### Options
 | Property                         | Type                               | Description                                                         |
 |----------------------------------|------------------------------------|---------------------------------------------------------------------|
-| Authentication                   | Enum(None, Basic, Windows,WindowsIntegratedSecurity, OAuth ) | Options for authentication for the HTTP request.   |
+| Authentication                   | Enum(None, Basic, Windows,WindowsIntegratedSecurity, OAuth, ClientCertificate) | Options for authentication for the HTTP request. |
 | Connection Timeout Seconds       | int                                | Timeout in seconds to be used for the connection and operation. Default is 30 seconds. |
 | Follow Redirects                 | bool                               | If FollowRedirects is set to false, all responses with an HTTP status code from 300 to 399 is returned to the application. Default is true.|
 | Allow Invalid Certificate        | bool                               | Do not throw an exception on certificate error. Setting this to true is discouraged in production. |
@@ -108,6 +109,7 @@ HttpRequest accepts any type of string response. E.g. xml and csv
 | Username                         | string                             | This field is available for Basic- and Windows Authentication. If Windows Authentication is selected Username needs to be of format domain\username. Basic authentication will add a base64 encoded Authorization header consisting of Username and password fields. |
 | Password                         | string                             | This field is available for Basic- and Windows Authentication.  |
 | Token                            | string                             | Token to be used in an OAuth request. The token will be added as a Authentication header. `Authorization Bearer '{Token}'` |
+| CertificateThumbprint            | string                             | This field is used with Client Certificate Authentication. The certificate needs to be found in Cert\CurrentUser\My store on the agent running the process |
 
 #### Result
 | Property          | Type          | Description        |
