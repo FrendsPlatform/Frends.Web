@@ -4,13 +4,16 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Dynamic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading;
 using Frends.Tasks.Attributes;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -28,7 +31,7 @@ namespace Frends.Web
 
     public enum Authentication
     {
-        None, Basic, WindowsAuthentication, WindowsIntegratedSecurity, OAuth
+        None, Basic, WindowsAuthentication, WindowsIntegratedSecurity, OAuth, ClientCertificate
     }
 
     public class Header
@@ -86,6 +89,12 @@ namespace Frends.Web
         [PasswordPropertyText]
         [ConditionalDisplay(nameof(Frends.Web.Authentication), Authentication.OAuth)]
         public string Token { get; set; }
+
+        /// <summary>
+        /// Thumbprint for using client certificate authentication.
+        /// </summary>
+        [ConditionalDisplay(nameof(Frends.Web.Authentication), Authentication.ClientCertificate)]
+        public string CertificateThumbprint { get; set; }
 
         /// <summary>
         /// Timeout in seconds to be used for the connection and operation.
@@ -297,6 +306,9 @@ namespace Frends.Web
                     }
                     handler.Credentials = new NetworkCredential(domainAndUserName[1], options.Password, domainAndUserName[0]);
                     break;
+                case Authentication.ClientCertificate:
+                    handler.ClientCertificates.Add(GetCertificate(options.CertificateThumbprint));
+                    break;
             }
 
             handler.AllowAutoRedirect = options.FollowRedirects;
@@ -308,6 +320,27 @@ namespace Frends.Web
             //Allow all endpoint types
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 |
                                                    SecurityProtocolType.Tls | SecurityProtocolType.Ssl3;
+        }
+
+        internal static X509Certificate2 GetCertificate(string thumbprint)
+        {
+            thumbprint = Regex.Replace(thumbprint, @"[^\da-zA-z]", string.Empty).ToUpper();
+            var store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+            try
+            {
+                store.Open(OpenFlags.ReadOnly);
+                var signingCert = store.Certificates.Find(X509FindType.FindByThumbprint, thumbprint, false);
+                if (signingCert.Count == 0)
+                {
+                    throw new FileNotFoundException($"Certificate with thumbprint: '{thumbprint}' not found in current user cert store.");
+                }
+
+                return signingCert[0];
+            }
+            finally
+            {
+                store.Close();
+            }
         }
     }
 }

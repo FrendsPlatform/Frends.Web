@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Text;
 using System.Threading;
@@ -120,6 +121,24 @@ namespace Frends.Web.Tests
             var recievedAuthValue = requestHeaders.Headers["Authorization"];
 
             Assert.That(recievedAuthValue, Is.EqualTo("Bearer fooToken"));
+        }
+
+        [Test]
+        public void RequestShouldAddClientCertificate()
+        {
+            const string expectedReturn = @"'FooBar'";
+
+            _stubHttp.Stub(x => x.Get("/endpoint"))
+                .Return(expectedReturn)
+                .OK();
+            const string thumbprint = "‎a4 d5 c7 cd be f7 db c4 f0 1c 94 3c 50 18 b6 dd 55 c1 89 ff";
+            var input = new Input { Method = Method.Get, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
+            var options = new Options { ConnectionTimeoutSeconds = 60, ThrowExceptionOnErrorResponse = true, Authentication = Authentication.ClientCertificate, CertificateThumbprint = thumbprint };
+           
+
+            var ex = Assert.ThrowsAsync<FileNotFoundException>(async () => await Web.RestRequest(input, options, CancellationToken.None));
+
+            Assert.That(ex.Message, Does.Contain($"Certificate with thumbprint: '{thumbprint}' not"));
         }
 
         [Test]
