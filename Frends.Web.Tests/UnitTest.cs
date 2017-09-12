@@ -131,7 +131,7 @@ namespace Frends.Web.Tests
             _stubHttp.Stub(x => x.Get("/endpoint"))
                 .Return(expectedReturn)
                 .OK();
-            const string thumbprint = "‎a4 d5 c7 cd be f7 db c4 f0 1c 94 3c 50 18 b6 dd 55 c1 89 ff";
+            const string thumbprint = "ABCD";
             var input = new Input { Method = Method.Get, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
             var options = new Options { ConnectionTimeoutSeconds = 60, ThrowExceptionOnErrorResponse = true, Authentication = Authentication.ClientCertificate, CertificateThumbprint = thumbprint };
            
