@@ -94,7 +94,7 @@ Result:
 | StatusCode        | int                       | Response status code    | 
 
 ## HttpRequestBytes
-HttpRequest is a generic HTTP request task that returns the raw . It accepts any type of string response, e.g. application/xml or text/plain
+HttpRequest is a generic HTTP request task that returns the raw response body as a byte array.
 
 Input and Options parameters are the same as with the [HttpRequest](#httprequest) task.
 
