@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -40,7 +41,7 @@ namespace Frends.Web.Tests
                 { "foo", "bar"},
                 { "bar", "foo"}
             };
-          
+
             _stubHttp.Stub(x => x.Get("/endpoint").WithParams(dict))
                .Return(expectedReturn)
                .OK();
@@ -63,7 +64,7 @@ namespace Frends.Web.Tests
 
             var input = new Input { Method = Method.Get, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
             var options = new Options { ConnectionTimeoutSeconds = 60, ThrowExceptionOnErrorResponse = true};
-         
+
             var ex = Assert.ThrowsAsync<WebException>(async () => await requestFunc(input, options, CancellationToken.None));
             Assert.That(ex.Message, Does.Contain("FooBar"));
         }
@@ -134,7 +135,7 @@ namespace Frends.Web.Tests
             const string thumbprint = "ABCD";
             var input = new Input { Method = Method.Get, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
             var options = new Options { ConnectionTimeoutSeconds = 60, ThrowExceptionOnErrorResponse = true, Authentication = Authentication.ClientCertificate, CertificateThumbprint = thumbprint };
-           
+
 
             var ex = Assert.ThrowsAsync<FileNotFoundException>(async () => await Web.RestRequest(input, options, CancellationToken.None));
 
@@ -184,7 +185,7 @@ namespace Frends.Web.Tests
         [Test]
         public async Task RestRequestShouldNotThrowIfReturnIsEmpty()
         {
-         
+
             _stubHttp.Stub(x => x.Get("/endpoint"))
                .Return(string.Empty)
                .OK();
@@ -223,6 +224,41 @@ namespace Frends.Web.Tests
             var options = new Options { ConnectionTimeoutSeconds = 60 };
             var result = (HttpResponse) await Web.HttpRequest(input, options, CancellationToken.None);
             Assert.That(result.Body, Is.EqualTo(expectedReturn));
+        }
+
+        [Test]
+        public async Task HttpRequestBytesReturnShoulReturnEmpty()
+        {
+            _stubHttp.Stub(x => x.Get("/endpoint"))
+                .Return(string.Empty)
+                .OK();
+
+            var input = new Input { Method = Method.Get, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
+            var options = new Options { ConnectionTimeoutSeconds = 60 };
+
+            var result = (HttpByteResponse)await Web.HttpRequestBytes(input, options, CancellationToken.None);
+            Assert.That(result.BodySizeInMegaBytes, Is.EqualTo(0));
+            Assert.That(result.BodyBytes, Is.Empty);
+        }
+
+        [Test]
+        public async Task HttpRequestBytesShouldBeAbleToReturnBinary()
+        {
+            var testFilePath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "TestFiles\\frends_favicon.png");
+
+            _stubHttp.Stub(x => x.Get("/endpoint"))
+                .ReturnFile(testFilePath)
+                .AsContentType("image/png")
+                .OK();
+
+            var input = new Input { Method = Method.Get, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
+            var options = new Options { ConnectionTimeoutSeconds = 60 };
+            var result = (HttpByteResponse)await Web.HttpRequestBytes(input, options, CancellationToken.None);
+
+            Assert.That(result.BodyBytes, Is.Not.Empty);
+
+            var actualFileBytes = File.ReadAllBytes(testFilePath);
+            Assert.That(result.BodyBytes, Is.EqualTo(actualFileBytes));
         }
     }
 }

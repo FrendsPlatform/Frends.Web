@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Dynamic;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -26,7 +25,7 @@ namespace Frends.Web
 {
     public enum Method
     {
-        Get,Post,Put,Patch,Delete
+        Get, Post, Put, Patch, Delete
     }
 
     public enum Authentication
@@ -48,7 +47,7 @@ namespace Frends.Web
         public Method Method { get; set; }
 
         /// <summary>
-        /// The URL with protocol and path. You can include query parameters directly in the url. 
+        /// The URL with protocol and path. You can include query parameters directly in the url.
         /// </summary>
         [DefaultValue("https://example.org/path/to")]
         [DefaultDisplayType(DisplayType.Text)]
@@ -61,7 +60,7 @@ namespace Frends.Web
         public string Message { get; set; }
 
         /// <summary>
-        /// List of HTTP headers to be added to the request. 
+        /// List of HTTP headers to be added to the request.
         /// </summary>
         public Header[] Headers { get; set; }
     }
@@ -109,7 +108,7 @@ namespace Frends.Web
         public bool FollowRedirects { get; set; }
 
         /// <summary>
-        /// Do not throw an exception on certificate error. 
+        /// Do not throw an exception on certificate error.
         /// </summary>
         public bool AllowInvalidCertificate { get; set; }
 
@@ -126,7 +125,16 @@ namespace Frends.Web
     public class HttpResponse
     {
         public string Body { get; set; }
-        public Dictionary<string,string> Headers { get; set; }
+        public Dictionary<string, string> Headers { get; set; }
+        public int StatusCode { get; set; }
+    }
+
+    public class HttpByteResponse
+    {
+        public byte[] BodyBytes { get; set; }
+        public double BodySizeInMegaBytes => Math.Round((BodyBytes?.Length / (1024 * 1024d) ?? 0), 3);
+        public MediaTypeHeaderValue ContentType { get; set; }
+        public Dictionary<string, string> Headers { get; set; }
         public int StatusCode { get; set; }
     }
 
@@ -140,7 +148,7 @@ namespace Frends.Web
     public class Web
     {
         /// <summary>
-        /// For a more detailed documentation see: https://github.com/FrendsPlatform/Frends.Web
+        /// For a more detailed documentation see: https://github.com/FrendsPlatform/Frends.Web#RestRequest
         /// </summary>
         /// <param name="input">Input parameters</param>
         /// <param name="options">Optional parameters with default values</param>
@@ -154,11 +162,11 @@ namespace Frends.Web
 
                 using (var httpClient = new HttpClient(handler))
                 {
-                    httpClient.DefaultRequestHeaders.Add("Accept","application/json");
+                    httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
 
                     var responseMessage = await GetHttpRequestResponseAsync(httpClient, input, options, cancellationToken).ConfigureAwait(false);
                     cancellationToken.ThrowIfCancellationRequested();
-                    
+
                     var response = new RestResponse
                     {
                         Body = TryParseRequestStringResultAsJToken(await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false)),
@@ -177,7 +185,7 @@ namespace Frends.Web
         }
 
         /// <summary>
-        /// For a more detailed documentation see: https://github.com/FrendsPlatform/Frends.Web
+        /// For a more detailed documentation see: https://github.com/FrendsPlatform/Frends.Web#HttpRequest
         /// </summary>
         /// <param name="input">Input parameters</param>
         /// <param name="options">Optional parameters with default values</param>
@@ -194,7 +202,6 @@ namespace Frends.Web
                     var responseMessage = await GetHttpRequestResponseAsync(httpClient, input, options, cancellationToken).ConfigureAwait(false);
                     cancellationToken.ThrowIfCancellationRequested();
 
-               
                     var response = new HttpResponse()
                     {
                         Body = await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false),
@@ -205,6 +212,43 @@ namespace Frends.Web
                     if (!responseMessage.IsSuccessStatusCode && options.ThrowExceptionOnErrorResponse)
                     {
                         throw new WebException($"Request to '{input.Url}' failed with status code {(int)responseMessage.StatusCode}. Response body: {response.Body}");
+                    }
+
+                    return response;
+                }
+            }
+        }
+
+        /// <summary>
+        /// HTTP request with byte return type
+        /// For a more detailed documentation see: https://github.com/FrendsPlatform/Frends.Web#HttpRequestBytes
+        /// </summary>
+        /// <param name="input">Input parameters</param>
+        /// <param name="options">Optional parameters with default values</param>
+        /// <returns>Object with the following properties: string BodyBytes, Dictionary(string,string) Headers. int StatusCode</returns>
+        public static async Task<object> HttpRequestBytes([CustomDisplay(DisplayOption.Tab)] Input input, [CustomDisplay(DisplayOption.Tab)] Options options, CancellationToken cancellationToken)
+        {
+            using (var handler = new WebRequestHandler())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                handler.SetHandleSettingsBasedOnOptions(options);
+
+                using (var httpClient = new HttpClient(handler))
+                {
+                    var responseMessage = await GetHttpRequestResponseAsync(httpClient, input, options, cancellationToken).ConfigureAwait(false);
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var response = new HttpByteResponse()
+                    {
+                        BodyBytes = await responseMessage.Content.ReadAsByteArrayAsync().ConfigureAwait(false),
+                        ContentType = responseMessage.Content.Headers.ContentType,
+                        StatusCode = (int)responseMessage.StatusCode,
+                        Headers = GetResponseHeaderDictionary(responseMessage.Headers, responseMessage.Content.Headers)
+                    };
+
+                    if (!responseMessage.IsSuccessStatusCode && options.ThrowExceptionOnErrorResponse)
+                    {
+                        throw new WebException($"Request to '{input.Url}' failed with status code {(int)responseMessage.StatusCode}.");
                     }
 
                     return response;
