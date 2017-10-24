@@ -4,6 +4,10 @@
       "TaskMethod": "Frends.Web.Web.HttpRequest"
     },
     {
-        "TaskMethod": "Frends.Web.Web.RestRequest"
-    }]
+      "TaskMethod": "Frends.Web.Web.HttpRequestBytes"
+    },
+    {
+      "TaskMethod": "Frends.Web.Web.RestRequest"
+    }
+  ]
 }
