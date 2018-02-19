@@ -32,7 +32,7 @@ Input:
 | Method            | Enum(Get, Post, Put, Patch, Delete)    | Http method of request.  |  `Post`  |
 | Url               | string                                 | The URL with protocol and path to call.  | `https://foo.example.org/path/to` `https://foo.example.org/path/to?Id=14` |
 | Message           | string                             | The message to be sent with the request. Not used for Get requests     | `{"Name" : "Adam", "Age":42}` |
-| Headers           | Array{Name: string, Value: string} | List of HTTP headers to be added to the request.     | `Name = Content-Type, Value = application/json` |
+| Headers           | Array{Name: string, Value: string} | List of HTTP headers to be added to the request. Setting charset parameter encodes message.    | `Name = Content-Type, Value = application/json` |
 
 Options:
 
