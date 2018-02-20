@@ -287,11 +287,22 @@ namespace Frends.Web
             httpClient.DefaultRequestHeaders.ExpectContinue = false;
             httpClient.Timeout = TimeSpan.FromSeconds(Convert.ToDouble(options.ConnectionTimeoutSeconds));
 
-            using (HttpContent content = new StringContent(input.Message ?? ""))
+            //Ignore case for headers and key comparison
+            var headerDict = input.Headers.ToDictionary(key => key.Name, value => value.Value, StringComparer.InvariantCultureIgnoreCase);
+
+            //Check if Content-Type exists and is set and valid
+            var contentTypeIsSetAndValid = false;
+            MediaTypeWithQualityHeaderValue validContentType = null;
+            if (headerDict.TryGetValue("content-type", out string contentTypeValue))
+                contentTypeIsSetAndValid = MediaTypeWithQualityHeaderValue.TryParse(contentTypeValue, out validContentType);
+
+            using (HttpContent content = contentTypeIsSetAndValid ?
+                new StringContent(input.Message ?? "", Encoding.GetEncoding(validContentType.CharSet ?? Encoding.UTF8.WebName)) :
+                new StringContent(input.Message ?? ""))
             {
                 //Clear default headers
                 content.Headers.Clear();
-                foreach (var header in input.Headers.ToDictionary(key => key.Name, value => value.Value))
+                foreach (var header in headerDict)
                 {
                     var requestHeaderAddedSuccessfully = httpClient.DefaultRequestHeaders.TryAddWithoutValidation(header.Key, header.Value);
                     if (!requestHeaderAddedSuccessfully)

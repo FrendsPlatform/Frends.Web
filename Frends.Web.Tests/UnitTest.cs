@@ -260,5 +260,79 @@ namespace Frends.Web.Tests
             var actualFileBytes = File.ReadAllBytes(testFilePath);
             Assert.That(result.BodyBytes, Is.EqualTo(actualFileBytes));
         }
+
+        [Test]
+        public async Task RequestShouldSetEncodingWithContentTypeCharsetIgnoringCase()
+        {
+            var codePageName = "iso-8859-1";
+            var requestMessage = "åäö!";
+            var utf8ByteArray = Encoding.UTF8.GetBytes(requestMessage);
+            var expectedContentType = $"text/plain; charset={codePageName}";
+
+            _stubHttp.Stub(x => x.Post("/endpoint"))
+                .AsContentType($"text/plain; charset={codePageName}")
+                .Return("foo åäö")
+                .OK();
+
+            var contentType = new Header { Name = "cONTENT-tYpE", Value = expectedContentType };
+            var input = new Input { Method = Method.Post, Url = "http://localhost:9191/endpoint", Headers = new Header[1] { contentType }, Message = requestMessage };
+            var options = new Options { ConnectionTimeoutSeconds = 60 };
+            var result = (HttpResponse)await Web.HttpRequest(input, options, CancellationToken.None);
+            var request = _stubHttp.AssertWasCalled(called => called.Post("/endpoint")).LastRequest();
+            var requestHead = request.RequestHead;
+            var requestBodyByteArray = Encoding.GetEncoding(codePageName).GetBytes(request.Body);
+            var requestContentType = requestHead.Headers["cONTENT-tYpE"];
+
+            //Casing should not affect setting header.
+            Assert.That(requestContentType, Is.EqualTo(expectedContentType));
+            //HttpMock does not handle other encodings well, so we expect the array to be be malformed.
+            Assert.That(requestBodyByteArray, Is.Not.EqualTo(utf8ByteArray));
+        }
+        
+        [Test]
+        public async Task RequestShouldHaveUTF8BodyContentWithMalformedContentType()
+        {
+            var message = "åäö";
+            var utf8ByteArray = Encoding.UTF8.GetBytes(message);
+            var expectedContentType = "malformed";
+
+            _stubHttp.Stub(x => x.Post("/endpoint"))
+                .AsContentType($"text/plain; charset=utf-8")
+                .Return("foo åäö")
+                .OK();
+
+            var contentType = new Header { Name = "content-type", Value = expectedContentType };
+            var input = new Input { Method = Method.Post, Url = "http://localhost:9191/endpoint", Headers = new Header[1] { contentType }, Message = message };
+            var options = new Options { ConnectionTimeoutSeconds = 60 };
+            var result = (HttpResponse)await Web.HttpRequest(input, options, CancellationToken.None);
+            var requestBody = _stubHttp.AssertWasCalled(called => called.Post("/endpoint")).LastRequest().Body;
+            var requestBodyByteArray = Encoding.UTF8.GetBytes(requestBody);
+
+            Assert.That(requestBodyByteArray, Is.EqualTo(utf8ByteArray));
+        }
+
+        [Test]
+        public async Task RequestShouldFallbackToUTF8WithNoCharset()
+        {
+
+            var message = "åäö";
+            var utf8ByteArray = Encoding.UTF8.GetBytes(message);
+            var expectedContentType = "application/json";
+
+            _stubHttp.Stub(x => x.Post("/endpoint"))
+                .AsContentType($"text/plain; charset=utf-8")
+                .Return("foo åäö")
+                .OK();
+
+        var contentType = new Header { Name = "content-type", Value = expectedContentType };
+        var input = new Input { Method = Method.Post, Url = "http://localhost:9191/endpoint", Headers = new Header[1] { contentType }, Message = message };
+        var options = new Options { ConnectionTimeoutSeconds = 60 };
+        var result = (HttpResponse)await Web.HttpRequest(input, options, CancellationToken.None);
+        var requestBody = _stubHttp.AssertWasCalled(called => called.Post("/endpoint")).LastRequest().Body;
+        var requestBodyByteArray = Encoding.UTF8.GetBytes(requestBody);
+
+        Assert.That(requestBodyByteArray, Is.EqualTo(utf8ByteArray));
+        }
+        
     }
 }
