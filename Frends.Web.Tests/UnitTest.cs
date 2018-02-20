@@ -297,7 +297,7 @@ namespace Frends.Web.Tests
             var expectedContentType = "malformed";
 
             _stubHttp.Stub(x => x.Post("/endpoint"))
-                .AsContentType($"text/plain; charset=UTF-8")
+                .AsContentType($"text/plain; charset=utf-8")
                 .Return("foo åäö")
                 .OK();
 
@@ -309,6 +309,29 @@ namespace Frends.Web.Tests
             var requestBodyByteArray = Encoding.UTF8.GetBytes(requestBody);
 
             Assert.That(requestBodyByteArray, Is.EqualTo(utf8ByteArray));
+        }
+
+        [Test]
+        public async Task RequestShouldFallbackToUTF8WithNoCharset()
+        {
+
+            var message = "åäö";
+            var utf8ByteArray = Encoding.UTF8.GetBytes(message);
+            var expectedContentType = "application/json";
+
+            _stubHttp.Stub(x => x.Post("/endpoint"))
+                .AsContentType($"text/plain; charset=utf-8")
+                .Return("foo åäö")
+                .OK();
+
+        var contentType = new Header { Name = "content-type", Value = expectedContentType };
+        var input = new Input { Method = Method.Post, Url = "http://localhost:9191/endpoint", Headers = new Header[1] { contentType }, Message = message };
+        var options = new Options { ConnectionTimeoutSeconds = 60 };
+        var result = (HttpResponse)await Web.HttpRequest(input, options, CancellationToken.None);
+        var requestBody = _stubHttp.AssertWasCalled(called => called.Post("/endpoint")).LastRequest().Body;
+        var requestBodyByteArray = Encoding.UTF8.GetBytes(requestBody);
+
+        Assert.That(requestBodyByteArray, Is.EqualTo(utf8ByteArray));
         }
         
     }

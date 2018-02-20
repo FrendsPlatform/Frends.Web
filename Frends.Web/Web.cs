@@ -297,7 +297,7 @@ namespace Frends.Web
                 contentTypeIsSetAndValid = MediaTypeWithQualityHeaderValue.TryParse(contentTypeValue, out validContentType);
 
             using (HttpContent content = contentTypeIsSetAndValid ?
-                new StringContent(input.Message ?? "", Encoding.GetEncoding(validContentType.CharSet)) :
+                new StringContent(input.Message ?? "", Encoding.GetEncoding(validContentType.CharSet ?? Encoding.UTF8.WebName)) :
                 new StringContent(input.Message ?? ""))
             {
                 //Clear default headers
