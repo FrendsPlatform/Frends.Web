@@ -46,7 +46,7 @@ namespace Frends.Web.Tests
                .Return(expectedReturn)
                .OK();
 
-            var input = new Input{ Method = Method.Get, Url = "http://localhost:9191/endpoint?foo=bar&bar=foo", Headers = new Header[0], Message = ""};
+            var input = new Input{ Method = Method.GET, Url = "http://localhost:9191/endpoint?foo=bar&bar=foo", Headers = new Header[0], Message = ""};
             var options = new Options { ConnectionTimeoutSeconds = 60 };
             var result = (dynamic) await requestFunc(input, options, CancellationToken.None);
 
@@ -62,7 +62,7 @@ namespace Frends.Web.Tests
                .Return(expectedReturn)
                .WithStatus(HttpStatusCode.InternalServerError);
 
-            var input = new Input { Method = Method.Get, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
+            var input = new Input { Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
             var options = new Options { ConnectionTimeoutSeconds = 60, ThrowExceptionOnErrorResponse = true};
 
             var ex = Assert.ThrowsAsync<WebException>(async () => await requestFunc(input, options, CancellationToken.None));
@@ -78,7 +78,7 @@ namespace Frends.Web.Tests
                .Return(expectedReturn)
                .WithStatus(HttpStatusCode.InternalServerError);
 
-            var input = new Input { Method = Method.Get, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
+            var input = new Input { Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
             var options = new Options { ConnectionTimeoutSeconds = 60, ThrowExceptionOnErrorResponse = false };
 
             var result  = (dynamic) await requestFunc(input, options, CancellationToken.None);
@@ -94,7 +94,7 @@ namespace Frends.Web.Tests
                .Return(expectedReturn)
                .OK();
 
-            var input = new Input { Method = Method.Get, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
+            var input = new Input { Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
             var options = new Options { ConnectionTimeoutSeconds = 60, ThrowExceptionOnErrorResponse = true, Authentication = Authentication.Basic, Username = "Foo", Password = "Bar"};
             await Web.RestRequest(input, options, CancellationToken.None);
 
@@ -114,7 +114,7 @@ namespace Frends.Web.Tests
                .Return(expectedReturn)
                .OK();
 
-            var input = new Input { Method = Method.Get, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
+            var input = new Input { Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
             var options = new Options { ConnectionTimeoutSeconds = 60, Authentication = Authentication.OAuth, Token = "fooToken"};
             await Web.RestRequest(input, options, CancellationToken.None);
 
@@ -133,7 +133,7 @@ namespace Frends.Web.Tests
                 .Return(expectedReturn)
                 .OK();
             const string thumbprint = "ABCD";
-            var input = new Input { Method = Method.Get, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
+            var input = new Input { Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
             var options = new Options { ConnectionTimeoutSeconds = 60, ThrowExceptionOnErrorResponse = true, Authentication = Authentication.ClientCertificate, CertificateThumbprint = thumbprint };
 
 
@@ -154,7 +154,7 @@ namespace Frends.Web.Tests
                .Return(output)
                .OK();
 
-            var input = new Input { Method = Method.Get, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
+            var input = new Input { Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
             var options = new Options { ConnectionTimeoutSeconds = 60, Authentication = Authentication.OAuth, Token = "fooToken" };
             var result = (RestResponse) await Web.RestRequest(input, options, CancellationToken.None);
             var resultBody = result.Body as JToken;
@@ -174,7 +174,7 @@ namespace Frends.Web.Tests
                .Return(output)
                .OK();
 
-            var input = new Input { Method = Method.Get, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
+            var input = new Input { Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
             var options = new Options { ConnectionTimeoutSeconds = 30, AllowInvalidResponseContentTypeCharSet = true};
             var result = (RestResponse)await Web.RestRequest(input, options, CancellationToken.None);
             var resultBody = result.Body as JToken;
@@ -190,7 +190,7 @@ namespace Frends.Web.Tests
                .Return(string.Empty)
                .OK();
 
-            var input = new Input { Method = Method.Get, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
+            var input = new Input { Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
             var options = new Options { ConnectionTimeoutSeconds = 60, Authentication = Authentication.OAuth, Token = "fooToken" };
             var result =  (RestResponse) await Web.RestRequest(input, options, CancellationToken.None);
 
@@ -205,7 +205,7 @@ namespace Frends.Web.Tests
                .Return("<fail>failbar<fail>")
                .OK();
 
-            var input = new Input { Method = Method.Get, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
+            var input = new Input { Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
             var options = new Options { ConnectionTimeoutSeconds = 60, Authentication = Authentication.OAuth, Token = "fooToken" };
             var ex = Assert.ThrowsAsync<JsonReaderException>(async () => await Web.RestRequest(input, options, CancellationToken.None));
             Assert.That(ex.Message, Is.EqualTo("Unable to read response message as json: <fail>failbar<fail>"));
@@ -220,7 +220,7 @@ namespace Frends.Web.Tests
                .Return(expectedReturn)
                .OK();
 
-            var input = new Input { Method = Method.Get, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
+            var input = new Input { Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
             var options = new Options { ConnectionTimeoutSeconds = 60 };
             var result = (HttpResponse) await Web.HttpRequest(input, options, CancellationToken.None);
             Assert.That(result.Body, Is.EqualTo(expectedReturn));
@@ -233,7 +233,7 @@ namespace Frends.Web.Tests
                 .Return(string.Empty)
                 .OK();
 
-            var input = new Input { Method = Method.Get, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
+            var input = new Input { Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
             var options = new Options { ConnectionTimeoutSeconds = 60 };
 
             var result = (HttpByteResponse)await Web.HttpRequestBytes(input, options, CancellationToken.None);
@@ -251,7 +251,7 @@ namespace Frends.Web.Tests
                 .AsContentType("image/png")
                 .OK();
 
-            var input = new Input { Method = Method.Get, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
+            var input = new Input { Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
             var options = new Options { ConnectionTimeoutSeconds = 60 };
             var result = (HttpByteResponse)await Web.HttpRequestBytes(input, options, CancellationToken.None);
 
@@ -260,6 +260,24 @@ namespace Frends.Web.Tests
             var actualFileBytes = File.ReadAllBytes(testFilePath);
             Assert.That(result.BodyBytes, Is.EqualTo(actualFileBytes));
         }
+
+        [Test]
+        public async Task PatchShouldComeThroug()
+        {
+            var message = "åäö";
+            _stubHttp.Stub(x => x.CustomVerb("/endpoint", "PATCH"))
+                .AsContentType($"text/plain; charset=UTF-8")
+                .Return("foo åäö")
+                .OK();
+
+            var input = new Input { Method = Method.PATCH, Url = "http://localhost:9191/endpoint", Headers = new Header[] { }, Message = message };
+            var options = new Options { ConnectionTimeoutSeconds = 60 };
+            await Web.HttpRequest(input, options, CancellationToken.None);
+            var requestBody = _stubHttp.AssertWasCalled(called => called.CustomVerb("PATCH", "/endpoint")).LastRequest().Body;
+      
+            Assert.That(requestBody, Is.EqualTo(message));
+        }
+
 
         [Test]
         public async Task RequestShouldSetEncodingWithContentTypeCharsetIgnoringCase()
@@ -275,7 +293,7 @@ namespace Frends.Web.Tests
                 .OK();
 
             var contentType = new Header { Name = "cONTENT-tYpE", Value = expectedContentType };
-            var input = new Input { Method = Method.Post, Url = "http://localhost:9191/endpoint", Headers = new Header[1] { contentType }, Message = requestMessage };
+            var input = new Input { Method = Method.POST, Url = "http://localhost:9191/endpoint", Headers = new Header[1] { contentType }, Message = requestMessage };
             var options = new Options { ConnectionTimeoutSeconds = 60 };
             var result = (HttpResponse)await Web.HttpRequest(input, options, CancellationToken.None);
             var request = _stubHttp.AssertWasCalled(called => called.Post("/endpoint")).LastRequest();
@@ -302,7 +320,7 @@ namespace Frends.Web.Tests
                 .OK();
 
             var contentType = new Header { Name = "content-type", Value = expectedContentType };
-            var input = new Input { Method = Method.Post, Url = "http://localhost:9191/endpoint", Headers = new Header[1] { contentType }, Message = message };
+            var input = new Input { Method = Method.POST, Url = "http://localhost:9191/endpoint", Headers = new Header[1] { contentType }, Message = message };
             var options = new Options { ConnectionTimeoutSeconds = 60 };
             var result = (HttpResponse)await Web.HttpRequest(input, options, CancellationToken.None);
             var requestBody = _stubHttp.AssertWasCalled(called => called.Post("/endpoint")).LastRequest().Body;
@@ -325,7 +343,7 @@ namespace Frends.Web.Tests
                 .OK();
 
         var contentType = new Header { Name = "content-type", Value = expectedContentType };
-        var input = new Input { Method = Method.Post, Url = "http://localhost:9191/endpoint", Headers = new Header[1] { contentType }, Message = message };
+        var input = new Input { Method = Method.POST, Url = "http://localhost:9191/endpoint", Headers = new Header[1] { contentType }, Message = message };
         var options = new Options { ConnectionTimeoutSeconds = 60 };
         var result = (HttpResponse)await Web.HttpRequest(input, options, CancellationToken.None);
         var requestBody = _stubHttp.AssertWasCalled(called => called.Post("/endpoint")).LastRequest().Body;
