@@ -25,7 +25,7 @@ namespace Frends.Web
 {
     public enum Method
     {
-        Get, Post, Put, Patch, Delete
+        GET, POST, PUT, PATCH , DELETE, HEAD, OPTIONS, CONNECT
     }
 
     public enum Authentication
@@ -56,7 +56,7 @@ namespace Frends.Web
         /// <summary>
         /// The message to be sent with the request.
         /// </summary>
-        [ConditionalDisplay(nameof(Method), Method.Post, Method.Delete, Method.Patch, Method.Put)]
+        [ConditionalDisplay(nameof(Method), Method.POST, Method.DELETE, Method.PATCH, Method.PUT)]
         public string Message { get; set; }
 
         /// <summary>
@@ -318,7 +318,7 @@ namespace Frends.Web
 
                 var request = new HttpRequestMessage(new HttpMethod(input.Method.ToString()), new Uri(input.Url))
                 {
-                    Content = input.Method != Method.Get ? content : null
+                    Content = input.Method != Method.GET ? content : null
                 };
 
                 var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
