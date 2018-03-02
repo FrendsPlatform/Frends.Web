@@ -2,12 +2,12 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading;
-using Frends.Tasks.Attributes;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Cryptography.X509Certificates;
@@ -50,13 +50,13 @@ namespace Frends.Web
         /// The URL with protocol and path. You can include query parameters directly in the url.
         /// </summary>
         [DefaultValue("https://example.org/path/to")]
-        [DefaultDisplayType(DisplayType.Text)]
+        [DisplayFormat(DataFormatString = "Text")]
         public string Url { get; set; }
 
         /// <summary>
         /// The message to be sent with the request.
         /// </summary>
-        [ConditionalDisplay(nameof(Method), Method.POST, Method.DELETE, Method.PATCH, Method.PUT)]
+        [UIHint(nameof(Method),"", Method.POST, Method.DELETE, Method.PATCH, Method.PUT)]
         public string Message { get; set; }
 
         /// <summary>
@@ -75,24 +75,24 @@ namespace Frends.Web
         /// <summary>
         /// If WindowsAuthentication is selected you should use domain\username
         /// </summary>
-        [ConditionalDisplay(nameof(Frends.Web.Authentication), Authentication.WindowsAuthentication, Authentication.Basic)]
+        [UIHint(nameof(Frends.Web.Authentication), "", Authentication.WindowsAuthentication, Authentication.Basic)]
         public string Username { get; set; }
 
         [PasswordPropertyText]
-        [ConditionalDisplay(nameof(Frends.Web.Authentication), Authentication.WindowsAuthentication, Authentication.Basic)]
+        [UIHint(nameof(Frends.Web.Authentication), "", Authentication.WindowsAuthentication, Authentication.Basic)]
         public string Password { get; set; }
 
         /// <summary>
         /// Bearer token to be used for request. Token will be added as Authorization header.
         /// </summary>
         [PasswordPropertyText]
-        [ConditionalDisplay(nameof(Frends.Web.Authentication), Authentication.OAuth)]
+        [UIHint(nameof(Frends.Web.Authentication), "", Authentication.OAuth)]
         public string Token { get; set; }
 
         /// <summary>
         /// Thumbprint for using client certificate authentication.
         /// </summary>
-        [ConditionalDisplay(nameof(Frends.Web.Authentication), Authentication.ClientCertificate)]
+        [UIHint(nameof(Frends.Web.Authentication), "", Authentication.ClientCertificate)]
         public string CertificateThumbprint { get; set; }
 
         /// <summary>
@@ -153,7 +153,7 @@ namespace Frends.Web
         /// <param name="input">Input parameters</param>
         /// <param name="options">Optional parameters with default values</param>
         /// <returns>Object with the following properties: JToken Body. Dictionary(string,string) Headers. int StatusCode</returns>
-        public static async Task<object> RestRequest([CustomDisplay(DisplayOption.Tab)] Input input, [CustomDisplay(DisplayOption.Tab)] Options options, CancellationToken cancellationToken)
+        public static async Task<object> RestRequest([PropertyTab] Input input, [PropertyTab] Options options, CancellationToken cancellationToken)
         {
             using (var handler = new WebRequestHandler())
             {
@@ -190,7 +190,7 @@ namespace Frends.Web
         /// <param name="input">Input parameters</param>
         /// <param name="options">Optional parameters with default values</param>
         /// <returns>Object with the following properties: string Body, Dictionary(string,string) Headers. int StatusCode</returns>
-        public static async Task<object> HttpRequest([CustomDisplay(DisplayOption.Tab)] Input input, [CustomDisplay(DisplayOption.Tab)] Options options, CancellationToken cancellationToken)
+        public static async Task<object> HttpRequest([PropertyTab] Input input, [PropertyTab] Options options, CancellationToken cancellationToken)
         {
             using (var handler = new WebRequestHandler())
             {
@@ -226,7 +226,7 @@ namespace Frends.Web
         /// <param name="input">Input parameters</param>
         /// <param name="options">Optional parameters with default values</param>
         /// <returns>Object with the following properties: string BodyBytes, Dictionary(string,string) Headers. int StatusCode</returns>
-        public static async Task<object> HttpRequestBytes([CustomDisplay(DisplayOption.Tab)] Input input, [CustomDisplay(DisplayOption.Tab)] Options options, CancellationToken cancellationToken)
+        public static async Task<object> HttpRequestBytes([PropertyTab]Input input, [PropertyTab] Options options, CancellationToken cancellationToken)
         {
             using (var handler = new WebRequestHandler())
             {
