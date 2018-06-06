@@ -16,6 +16,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Aws4RequestSigner;
 #pragma warning disable 1573
 
 // ReSharper disable InconsistentNaming
@@ -25,12 +26,12 @@ namespace Frends.Web
 {
     public enum Method
     {
-        GET, POST, PUT, PATCH , DELETE, HEAD, OPTIONS, CONNECT
+        GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, CONNECT
     }
 
     public enum Authentication
     {
-        None, Basic, WindowsAuthentication, WindowsIntegratedSecurity, OAuth, ClientCertificate
+        None, Basic, WindowsAuthentication, WindowsIntegratedSecurity, OAuth, ClientCertificate, AWSAssumeRole
     }
 
     public class Header
@@ -56,7 +57,7 @@ namespace Frends.Web
         /// <summary>
         /// The message to be sent with the request.
         /// </summary>
-        [UIHint(nameof(Method),"", Method.POST, Method.DELETE, Method.PATCH, Method.PUT)]
+        [UIHint(nameof(Method), "", Method.POST, Method.DELETE, Method.PATCH, Method.PUT)]
         public string Message { get; set; }
 
         /// <summary>
@@ -94,6 +95,52 @@ namespace Frends.Web
         /// </summary>
         [UIHint(nameof(Frends.Web.Authentication), "", Authentication.ClientCertificate)]
         public string CertificateThumbprint { get; set; }
+
+        /// <summary>
+        /// Access key ID to use in the request.
+        /// </summary>
+        [UIHint(nameof(Frends.Web.Authentication), "", Authentication.AWSAssumeRole)]
+        [DisplayFormat(DataFormatString = "Text")]
+        public String AccessKeyID { get; set; }
+
+        /// <summary>
+        /// The secret access key used in the request.
+        /// </summary>
+        [UIHint(nameof(Frends.Web.Authentication), "", Authentication.AWSAssumeRole)]
+        [DisplayFormat(DataFormatString = "Text")]
+        [PasswordPropertyText]
+        public String SecretAccessKey { get; set; }
+
+        /// <summary>
+        /// The temporary session token recieved with the request.
+        /// </summary>
+        [UIHint(nameof(Frends.Web.Authentication), "", Authentication.AWSAssumeRole)]
+        [DisplayFormat(DataFormatString = "Text")]
+        [PasswordPropertyText]
+        public String SessionToken { get; set; }
+
+        /// <summary>
+        /// Expiration date time to be used with the request.
+        /// </summary>
+        [UIHint(nameof(Frends.Web.Authentication), "", Authentication.AWSAssumeRole)]
+        [DisplayFormat(DataFormatString = "Text")]
+        public String Expiration { get; set; }
+
+        /// <summary>
+        /// The AWS service name which can be found in the first part of the URL of the service.
+        /// </summary>
+        [UIHint(nameof(Frends.Web.Authentication), "", Authentication.AWSAssumeRole)]
+        [DisplayFormat(DataFormatString = "Text")]
+        [DefaultValue("execute-api")]
+        public String Service { get; set; }
+
+        /// <summary>
+        /// The region against which authentication and the request is made. These should all match.
+        /// </summary>
+        [UIHint(nameof(Frends.Web.Authentication), "", Authentication.AWSAssumeRole)]
+        [DisplayFormat(DataFormatString = "Text")]
+        [DefaultValue("eu-west-1")]
+        public String RegionEndpoint { get; set; }
 
         /// <summary>
         /// Timeout in seconds to be used for the connection and operation.
@@ -320,6 +367,15 @@ namespace Frends.Web
                 {
                     Content = input.Method != Method.GET ? content : null
                 };
+
+                switch (options.Authentication)
+                {
+                    case Authentication.AWSAssumeRole:
+                        AWS4RequestSigner helper = new AWS4RequestSigner(options.AccessKeyID, options.SecretAccessKey);
+                        request.Headers.Add("X-Amz-Security-Token", options.SessionToken);
+                        request = helper.Sign(request, options.Service, options.RegionEndpoint).Result;
+                        break;
+                }
 
                 var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
 

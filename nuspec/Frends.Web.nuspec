@@ -11,6 +11,7 @@
     <summary />
     <dependencies>
       <dependency id="Newtonsoft.Json" version="6.0.8" />
+      <dependency id="Aws4RequestSigner" version="0.2.0" />
     </dependencies>
     <frameworkAssemblies>
       <frameworkAssembly assemblyName="System" />
