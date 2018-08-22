@@ -7,6 +7,9 @@
       "TaskMethod": "Frends.Web.Web.HttpRequestBytes"
     },
     {
+      "TaskMethod": "Frends.Web.Web.HttpSendBytes"
+    },
+    {
       "TaskMethod": "Frends.Web.Web.RestRequest"
     }
   ]

@@ -16,7 +16,8 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-#pragma warning disable 1573
+
+#pragma warning disable 1573 // disable warning for missing documentation for internal cancellation tokens
 
 // ReSharper disable InconsistentNaming
 #pragma warning disable 1591
@@ -25,7 +26,15 @@ namespace Frends.Web
 {
     public enum Method
     {
-        GET, POST, PUT, PATCH , DELETE, HEAD, OPTIONS, CONNECT
+        GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, CONNECT
+    }
+
+    /// <summary>
+    /// Allowed methods for sending content
+    /// </summary>
+    public enum SendMethod
+    {
+        POST, PUT, PATCH
     }
 
     public enum Authentication
@@ -54,10 +63,37 @@ namespace Frends.Web
         public string Url { get; set; }
 
         /// <summary>
-        /// The message to be sent with the request.
+        /// The message text to be sent with the request.
         /// </summary>
-        [UIHint(nameof(Method),"", Method.POST, Method.DELETE, Method.PATCH, Method.PUT)]
+        [UIHint(nameof(Method), "", Method.POST, Method.DELETE, Method.PATCH, Method.PUT)]
         public string Message { get; set; }
+
+        /// <summary>
+        /// List of HTTP headers to be added to the request.
+        /// </summary>
+        public Header[] Headers { get; set; }
+    }
+
+    public class ByteInput
+    {
+        /// <summary>
+        /// The HTTP Method to be used with the request.
+        /// </summary>
+        [DefaultValue(SendMethod.POST)]
+        public SendMethod Method { get; set; }
+
+        /// <summary>
+        /// The URL with protocol and path. You can include query parameters directly in the url.
+        /// </summary>
+        [DefaultValue("https://example.org/path/to")]
+        [DisplayFormat(DataFormatString = "Text")]
+        public string Url { get; set; }
+
+        /// <summary>
+        /// The content to send as byte array
+        /// </summary>
+        [DisplayFormat(DataFormatString = "Expression")]
+        public byte[] ContentBytes { get; set; }
 
         /// <summary>
         /// List of HTTP headers to be added to the request.
@@ -160,11 +196,23 @@ namespace Frends.Web
                 cancellationToken.ThrowIfCancellationRequested();
                 handler.SetHandleSettingsBasedOnOptions(options);
 
+                var headers = GetHeaderDictionary(input.Headers);
+
                 using (var httpClient = new HttpClient(handler))
+                using (var content = GetContent(input, headers))
                 {
                     httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
 
-                    var responseMessage = await GetHttpRequestResponseAsync(httpClient, input, options, cancellationToken).ConfigureAwait(false);
+                    var responseMessage = await GetHttpRequestResponseAsync(
+                            httpClient,
+                            input.Method.ToString(),
+                            input.Url,
+                            content,
+                            headers,
+                            options,
+                            cancellationToken)
+                        .ConfigureAwait(false);
+
                     cancellationToken.ThrowIfCancellationRequested();
 
                     var response = new RestResponse
@@ -197,9 +245,21 @@ namespace Frends.Web
                 cancellationToken.ThrowIfCancellationRequested();
                 handler.SetHandleSettingsBasedOnOptions(options);
 
+                var headers = GetHeaderDictionary(input.Headers);
+
                 using (var httpClient = new HttpClient(handler))
+                using (var content = GetContent(input, headers))
                 {
-                    var responseMessage = await GetHttpRequestResponseAsync(httpClient, input, options, cancellationToken).ConfigureAwait(false);
+                    var responseMessage = await GetHttpRequestResponseAsync(
+                            httpClient,
+                            input.Method.ToString(),
+                            input.Url,
+                            content,
+                            headers,
+                            options,
+                            cancellationToken)
+                        .ConfigureAwait(false);
+
                     cancellationToken.ThrowIfCancellationRequested();
 
                     var response = new HttpResponse()
@@ -233,9 +293,20 @@ namespace Frends.Web
                 cancellationToken.ThrowIfCancellationRequested();
                 handler.SetHandleSettingsBasedOnOptions(options);
 
+                var headers = GetHeaderDictionary(input.Headers);
                 using (var httpClient = new HttpClient(handler))
+                using (var content = GetContent(input, headers))
                 {
-                    var responseMessage = await GetHttpRequestResponseAsync(httpClient, input, options, cancellationToken).ConfigureAwait(false);
+                    var responseMessage = await GetHttpRequestResponseAsync(
+                            httpClient,
+                            input.Method.ToString(),
+                            input.Url,
+                            content,
+                            headers,
+                            options,
+                            cancellationToken)
+                        .ConfigureAwait(false);
+
                     cancellationToken.ThrowIfCancellationRequested();
 
                     var response = new HttpByteResponse()
@@ -256,7 +327,55 @@ namespace Frends.Web
             }
         }
 
-        //Combine response- and responsecontent header to one dictionary
+        /// <summary>
+        /// HTTP POST or other send with byte content, e.g. for files or gzipped content
+        /// For a more detailed documentation see: https://github.com/FrendsPlatform/Frends.Web#HttpRequestBytes
+        /// </summary>
+        /// <param name="input">Input parameters</param>
+        /// <param name="options">Optional parameters with default values</param>
+        /// <returns>Object with the following properties: string Body, Dictionary(string,string) Headers. int StatusCode</returns>
+        public static async Task<object> HttpSendBytes([PropertyTab]ByteInput input, [PropertyTab] Options options, CancellationToken cancellationToken)
+        {
+            using (var handler = new WebRequestHandler())
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                handler.SetHandleSettingsBasedOnOptions(options);
+
+                var headers = GetHeaderDictionary(input.Headers);
+
+                using (var httpClient = new HttpClient(handler))
+                using (var content = GetContent(input))
+                {
+                    var responseMessage = await GetHttpRequestResponseAsync(
+                            httpClient,
+                            input.Method.ToString(),
+                            input.Url,
+                            content,
+                            headers,
+                            options,
+                            cancellationToken)
+                        .ConfigureAwait(false);
+
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var response = new HttpResponse()
+                    {
+                        Body = await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false),
+                        StatusCode = (int)responseMessage.StatusCode,
+                        Headers = GetResponseHeaderDictionary(responseMessage.Headers, responseMessage.Content.Headers)
+                    };
+
+                    if (!responseMessage.IsSuccessStatusCode && options.ThrowExceptionOnErrorResponse)
+                    {
+                        throw new WebException($"Request to '{input.Url}' failed with status code {(int)responseMessage.StatusCode}. Response body: {response.Body}");
+                    }
+
+                    return response;
+                }
+            }
+        }
+
+        // Combine response- and responsecontent header to one dictionary
         private static Dictionary<string, string> GetResponseHeaderDictionary(HttpResponseHeaders responseMessageHeaders, HttpContentHeaders contentHeaders)
         {
             var responseHeaders = responseMessageHeaders.ToDictionary(h => h.Key, h => string.Join(";", h.Value));
@@ -265,7 +384,16 @@ namespace Frends.Web
             return allHeaders;
         }
 
-        private static async Task<HttpResponseMessage> GetHttpRequestResponseAsync(HttpClient httpClient, Input input, Options options, CancellationToken cancellationToken)
+        private static IDictionary<string, string> GetHeaderDictionary(IEnumerable<Header> headers)
+        {
+            //Ignore case for headers and key comparison
+            return headers.ToDictionary(key => key.Name, value => value.Value, StringComparer.InvariantCultureIgnoreCase);
+        }
+
+        private static async Task<HttpResponseMessage> GetHttpRequestResponseAsync(
+            HttpClient httpClient, string method, string url,
+            HttpContent content, IDictionary<string, string> headers,
+            Options options, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (options.Authentication == Authentication.Basic || options.Authentication == Authentication.OAuth)
@@ -285,50 +413,61 @@ namespace Frends.Web
 
             //Do not automtically set expect 100-continue response header
             httpClient.DefaultRequestHeaders.ExpectContinue = false;
+            httpClient.DefaultRequestHeaders.TryAddWithoutValidation("content-type", "application/json");
             httpClient.Timeout = TimeSpan.FromSeconds(Convert.ToDouble(options.ConnectionTimeoutSeconds));
 
-            //Ignore case for headers and key comparison
-            var headerDict = input.Headers.ToDictionary(key => key.Name, value => value.Value, StringComparer.InvariantCultureIgnoreCase);
+            //Clear default headers
+            content.Headers.Clear();
+            foreach (var header in headers)
+            {
+                var requestHeaderAddedSuccessfully = httpClient.DefaultRequestHeaders.TryAddWithoutValidation(header.Key, header.Value);
+                if (!requestHeaderAddedSuccessfully)
+                {
+                    //Could not add to request headers try to add to content headers
+                    var contentHeaderAddedSuccessfully = content.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                    if (!contentHeaderAddedSuccessfully)
+                    {
+                        Trace.TraceWarning($"Could not add header {header.Key}:{header.Value}");
+                    }
+                }
+            }
 
+            // Only POST, PUT, and PATCH can have content, otherwise the HttpClient will fail
+            var isContentAllowed = Enum.TryParse(method, ignoreCase: true, result: out SendMethod _);
+
+            var request = new HttpRequestMessage(new HttpMethod(method), new Uri(url))
+            {
+                Content = isContentAllowed ? content : null,
+            };
+
+            var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+            if (options.AllowInvalidResponseContentTypeCharSet && response.Content.Headers?.ContentType != null)
+            {
+                response.Content.Headers.ContentType.CharSet = null;
+            }
+            return response;
+
+        }
+
+        private static HttpContent GetContent(Input input, IDictionary<string, string> headers)
+        {
             //Check if Content-Type exists and is set and valid
             var contentTypeIsSetAndValid = false;
             MediaTypeWithQualityHeaderValue validContentType = null;
-            if (headerDict.TryGetValue("content-type", out string contentTypeValue))
-                contentTypeIsSetAndValid = MediaTypeWithQualityHeaderValue.TryParse(contentTypeValue, out validContentType);
-
-            using (HttpContent content = contentTypeIsSetAndValid ?
-                new StringContent(input.Message ?? "", Encoding.GetEncoding(validContentType.CharSet ?? Encoding.UTF8.WebName)) :
-                new StringContent(input.Message ?? ""))
+            if (headers.TryGetValue("content-type", out string contentTypeValue))
             {
-                //Clear default headers
-                content.Headers.Clear();
-                foreach (var header in headerDict)
-                {
-                    var requestHeaderAddedSuccessfully = httpClient.DefaultRequestHeaders.TryAddWithoutValidation(header.Key, header.Value);
-                    if (!requestHeaderAddedSuccessfully)
-                    {
-                        //Could not add to request headers try to add to content headers
-                        var contentHeaderAddedSuccessfully = content.Headers.TryAddWithoutValidation(header.Key, header.Value);
-                        if (!contentHeaderAddedSuccessfully)
-                        {
-                            Trace.TraceWarning($"Could not add header {header.Key}:{header.Value}");
-                        }
-                    }
-                }
-
-                var request = new HttpRequestMessage(new HttpMethod(input.Method.ToString()), new Uri(input.Url))
-                {
-                    Content = input.Method != Method.GET ? content : null
-                };
-
-                var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-
-                if (options.AllowInvalidResponseContentTypeCharSet)
-                {
-                    response.Content.Headers.ContentType.CharSet = null;
-                }
-                return response;
+                contentTypeIsSetAndValid = MediaTypeWithQualityHeaderValue.TryParse(contentTypeValue, out validContentType);
             }
+
+            return contentTypeIsSetAndValid
+                ? new StringContent(input.Message ?? "", Encoding.GetEncoding(validContentType.CharSet ?? Encoding.UTF8.WebName))
+                : new StringContent(input.Message ?? "");
+        }
+
+        private static HttpContent GetContent(ByteInput input)
+        {
+            return new ByteArrayContent(input.ContentBytes);
         }
 
         private static object TryParseRequestStringResultAsJToken(string response)

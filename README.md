@@ -26,12 +26,12 @@ If the response is not valid JSON, the task will throw an JsonReaderException wi
 
 Input:
 
-| Property          | Type                               | Description                                             | Example                                   |
-|-------------------|----------------------------------------|---------------------------------------------------------|-------------------------------------------|
-| Method            | Enum(Get, Post, Put, Patch, Delete)    | Http method of request.  |  `Post`  |
-| Url               | string                                 | The URL with protocol and path to call.  | `https://foo.example.org/path/to` `https://foo.example.org/path/to?Id=14` |
-| Message           | string                             | The message to be sent with the request. Not used for Get requests     | `{"Name" : "Adam", "Age":42}` |
-| Headers           | Array{Name: string, Value: string} | List of HTTP headers to be added to the request. Setting charset parameter encodes message.    | `Name = Content-Type, Value = application/json` |
+| Property          | Type													      | Description                                             | Example                                   |
+|-------------------|-------------------------------------------------------------|---------------------------------------------------------|-------------------------------------------|
+| Method            | Enum(GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, CONNECT) | Http method of request.  |  `POST`  |
+| Url               | string													  | The URL with protocol and path to call.  | `https://foo.example.org/path/to` `https://foo.example.org/path/to?Id=14` |
+| Message           | string													  | The message to be sent with the request. Not used for Get requests     | `{"Name" : "Adam", "Age":42}` |
+| Headers           | Array{Name: string, Value: string}						  | List of HTTP headers to be added to the request. Setting charset parameter encodes message.    | `Name = Content-Type, Value = application/json` |
 
 Options:
 
@@ -62,12 +62,12 @@ HttpRequest is a generic HTTP request task. It accepts any type of string respon
 
 Input:
 
-| Property          | Type                               | Description                                                                | Example                                   |
-|-------------------|----------------------------------------|------------------------------------------------------------------------|-------------------------------------------|
-| Message           | string                                 | The message to be sent with the request. Not used for Get requests     | `{"Name" : "Adam", "Age":42}`             |
-| Method            | Enum(Get, Post, Put, Patch, Delete)    | Http method of request.                                                | `Post`                                    |
-| Url               | string                                 | The URL with protocol and path to call                                 | `https://foo.example.org/path/to?Id=14`   |
-| Headers           | Array{Name: string, Value: string}     | List of HTTP headers to be added to the request.                       | `Name = Content-Type, Value = application/json` |
+| Property          | Type													      | Description                                                                | Example                                   |
+|-------------------|-------------------------------------------------------------|------------------------------------------------------------------------|-------------------------------------------|
+| Message           | string													  | The message to be sent with the request. Not used for Get requests     | `{"Name" : "Adam", "Age":42}`             |
+| Method            | Enum(GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS, CONNECT) | Http method of request.                                                | `POST`                                    |
+| Url               | string                                                      | The URL with protocol and path to call                                 | `https://foo.example.org/path/to?Id=14`   |
+| Headers           | Array{Name: string, Value: string}						  | List of HTTP headers to be added to the request.                       | `Name = Content-Type, Value = application/json` |
 
 Options:
 
@@ -105,6 +105,20 @@ Result:
 | ContentType		| System.Net.Http.Headers.MediaTypeHeaderValue | The parsed media type header from the response, so you can e.g. get the media type string by `#result.ContentType.MediaType`  |
 | Headers           | Dictionary<string,string>                    | Response headers, with multiple values for the same header combined by semicolons (;)                                         |
 | StatusCode        | int                                          | Response status code                                                                                                          | 
+
+## HttpSendBytes
+HttpSendBytes can be used to send binary data as the content. This can be useful for e.g. pushing file data or gzip compressed content.
+
+Input:
+
+| Property          | Type                                   | Description																	| Example                                   |
+|-------------------|----------------------------------------|------------------------------------------------------------------------------|-------------------------------------------|
+| ContentBytes      | byte[]                                 | The message to be sent with the request. Not used for Get requests			| `#result[Read file]`                      |
+| Method            | Enum(POST, PUT, PATCH)                 | Http method of request. Only those methods that can have contetn are allowed | `POST`                                    |
+| Url               | string                                 | The URL with protocol and path to call                                       | `https://foo.example.org/path/to?Id=14`   |
+| Headers           | Array{Name: string, Value: string}     | List of HTTP headers to be added to the request.                             | `Name = Content-Encoding, Value = gzip`   |
+
+The Options and task result are the same as with the [HttpRequest](#httprequest) task.
 
 License
 =======

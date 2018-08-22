@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using HttpMock;
+using HttpMock.Verify.NUnit;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
@@ -16,14 +17,16 @@ namespace Frends.Web.Tests
     [TestFixture]
     public class UnitTest
     {
+        private const string BasePath = "http://localhost:9191";
+
         private IHttpServer _stubHttp;
 
         [SetUp]
         public void Setup()
         {
-           _stubHttp = HttpMockRepository.At("http://localhost:9191");
+            _stubHttp = HttpMockRepository.At(BasePath);
         }
-        private static IEnumerable<Func<Input, Options, CancellationToken,Task<object>>> TestCases
+        private static IEnumerable<Func<Input, Options, CancellationToken, Task<object>>> TestCases
         {
             get
             {
@@ -32,8 +35,20 @@ namespace Frends.Web.Tests
             }
         }
 
+        private Input GetInputParams(Method method = Method.GET, string url = BasePath, string message = "",
+            params Header[] headers)
+        {
+            return new Input
+            {
+                Method = method,
+                Url = url,
+                Headers = headers,
+                Message = message
+            };
+        }
+
         [TestCaseSource(nameof(TestCases))]
-        public async Task RequestTestGetWithParameters(Func<Input,Options,CancellationToken,Task<object>> requestFunc)
+        public async Task RequestTestGetWithParameters(Func<Input, Options, CancellationToken, Task<object>> requestFunc)
         {
             const string expectedReturn = @"'FooBar'";
             var dict = new Dictionary<string, string>()
@@ -46,9 +61,9 @@ namespace Frends.Web.Tests
                .Return(expectedReturn)
                .OK();
 
-            var input = new Input{ Method = Method.GET, Url = "http://localhost:9191/endpoint?foo=bar&bar=foo", Headers = new Header[0], Message = ""};
+            var input = GetInputParams(url: "http://localhost:9191/endpoint?foo=bar&bar=foo");
             var options = new Options { ConnectionTimeoutSeconds = 60 };
-            var result = (dynamic) await requestFunc(input, options, CancellationToken.None);
+            var result = (dynamic)await requestFunc(input, options, CancellationToken.None);
 
             Assert.That(result.Body.ToString(), Does.Contain("FooBar"));
         }
@@ -62,8 +77,14 @@ namespace Frends.Web.Tests
                .Return(expectedReturn)
                .WithStatus(HttpStatusCode.InternalServerError);
 
-            var input = new Input { Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
-            var options = new Options { ConnectionTimeoutSeconds = 60, ThrowExceptionOnErrorResponse = true};
+            var input = new Input
+            {
+                Method = Method.GET,
+                Url = "http://localhost:9191/endpoint",
+                Headers = new Header[0],
+                Message = ""
+            };
+            var options = new Options { ConnectionTimeoutSeconds = 60, ThrowExceptionOnErrorResponse = true };
 
             var ex = Assert.ThrowsAsync<WebException>(async () => await requestFunc(input, options, CancellationToken.None));
             Assert.That(ex.Message, Does.Contain("FooBar"));
@@ -78,10 +99,16 @@ namespace Frends.Web.Tests
                .Return(expectedReturn)
                .WithStatus(HttpStatusCode.InternalServerError);
 
-            var input = new Input { Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
+            var input = new Input
+            {
+                Method = Method.GET,
+                Url = "http://localhost:9191/endpoint",
+                Headers = new Header[0],
+                Message = ""
+            };
             var options = new Options { ConnectionTimeoutSeconds = 60, ThrowExceptionOnErrorResponse = false };
 
-            var result  = (dynamic) await requestFunc(input, options, CancellationToken.None);
+            var result = (dynamic)await requestFunc(input, options, CancellationToken.None);
             Assert.That(result.Body.ToString(), Does.Contain("FooBar"));
         }
 
@@ -95,7 +122,7 @@ namespace Frends.Web.Tests
                .OK();
 
             var input = new Input { Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
-            var options = new Options { ConnectionTimeoutSeconds = 60, ThrowExceptionOnErrorResponse = true, Authentication = Authentication.Basic, Username = "Foo", Password = "Bar"};
+            var options = new Options { ConnectionTimeoutSeconds = 60, ThrowExceptionOnErrorResponse = true, Authentication = Authentication.Basic, Username = "Foo", Password = "Bar" };
             await Web.RestRequest(input, options, CancellationToken.None);
 
             var requestHeaders = _stubHttp.AssertWasCalled(called => called.Get("/endpoint")).LastRequest().RequestHead;
@@ -115,7 +142,7 @@ namespace Frends.Web.Tests
                .OK();
 
             var input = new Input { Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
-            var options = new Options { ConnectionTimeoutSeconds = 60, Authentication = Authentication.OAuth, Token = "fooToken"};
+            var options = new Options { ConnectionTimeoutSeconds = 60, Authentication = Authentication.OAuth, Token = "fooToken" };
             await Web.RestRequest(input, options, CancellationToken.None);
 
             var requestHeaders = _stubHttp.AssertWasCalled(called => called.Get("/endpoint")).LastRequest().RequestHead;
@@ -156,7 +183,7 @@ namespace Frends.Web.Tests
 
             var input = new Input { Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
             var options = new Options { ConnectionTimeoutSeconds = 60, Authentication = Authentication.OAuth, Token = "fooToken" };
-            var result = (RestResponse) await Web.RestRequest(input, options, CancellationToken.None);
+            var result = (RestResponse)await Web.RestRequest(input, options, CancellationToken.None);
             var resultBody = result.Body as JToken;
             Assert.That(resultBody["Foo"], Is.EqualTo(new JValue("Bar")));
         }
@@ -175,24 +202,46 @@ namespace Frends.Web.Tests
                .OK();
 
             var input = new Input { Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
-            var options = new Options { ConnectionTimeoutSeconds = 30, AllowInvalidResponseContentTypeCharSet = true};
+            var options = new Options { ConnectionTimeoutSeconds = 30, AllowInvalidResponseContentTypeCharSet = true };
             var result = (RestResponse)await Web.RestRequest(input, options, CancellationToken.None);
             var resultBody = result.Body as JToken;
             Assert.That(resultBody["Foo"], Is.EqualTo(new JValue("Bar")));
         }
 
-
         [Test]
         public async Task RestRequestShouldNotThrowIfReturnIsEmpty()
         {
-
             _stubHttp.Stub(x => x.Get("/endpoint"))
                .Return(string.Empty)
                .OK();
 
             var input = new Input { Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
             var options = new Options { ConnectionTimeoutSeconds = 60, Authentication = Authentication.OAuth, Token = "fooToken" };
-            var result =  (RestResponse) await Web.RestRequest(input, options, CancellationToken.None);
+            var result = (RestResponse)await Web.RestRequest(input, options, CancellationToken.None);
+
+            Assert.That(result.Body, Is.EqualTo(new JValue("")));
+        }
+
+        [Test]
+        public async Task RestRequestShouldNotThrowIfReturnIsEmptyAndContentTypeValidationTurnedOff()
+        {
+            _stubHttp.Stub(x => x.CustomVerb("/endpoint", "PATCH"))
+                .Return("")
+                .WithStatus(HttpStatusCode.Accepted);
+
+            var input = new Input
+            {
+                Method = Method.PATCH,
+                Url = "http://localhost:9191/endpoint",
+                Headers = new Header[0],
+                Message = ""
+            };
+            var options = new Options
+            {
+                ConnectionTimeoutSeconds = 60,
+                AllowInvalidResponseContentTypeCharSet = true
+            };
+            var result = (RestResponse)await Web.RestRequest(input, options, CancellationToken.None);
 
             Assert.That(result.Body, Is.EqualTo(new JValue("")));
         }
@@ -222,7 +271,7 @@ namespace Frends.Web.Tests
 
             var input = new Input { Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
             var options = new Options { ConnectionTimeoutSeconds = 60 };
-            var result = (HttpResponse) await Web.HttpRequest(input, options, CancellationToken.None);
+            var result = (HttpResponse)await Web.HttpRequest(input, options, CancellationToken.None);
             Assert.That(result.Body, Is.EqualTo(expectedReturn));
         }
 
@@ -274,10 +323,9 @@ namespace Frends.Web.Tests
             var options = new Options { ConnectionTimeoutSeconds = 60 };
             await Web.HttpRequest(input, options, CancellationToken.None);
             var requestBody = _stubHttp.AssertWasCalled(called => called.CustomVerb("PATCH", "/endpoint")).LastRequest().Body;
-      
+
             Assert.That(requestBody, Is.EqualTo(message));
         }
-
 
         [Test]
         public async Task RequestShouldSetEncodingWithContentTypeCharsetIgnoringCase()
@@ -306,7 +354,7 @@ namespace Frends.Web.Tests
             //HttpMock does not handle other encodings well, so we expect the array to be be malformed.
             Assert.That(requestBodyByteArray, Is.Not.EqualTo(utf8ByteArray));
         }
-        
+
         [Test]
         public async Task RequestShouldHaveUTF8BodyContentWithMalformedContentType()
         {
@@ -332,7 +380,6 @@ namespace Frends.Web.Tests
         [Test]
         public async Task RequestShouldFallbackToUTF8WithNoCharset()
         {
-
             var message = "åäö";
             var utf8ByteArray = Encoding.UTF8.GetBytes(message);
             var expectedContentType = "application/json";
@@ -342,15 +389,44 @@ namespace Frends.Web.Tests
                 .Return("foo åäö")
                 .OK();
 
-        var contentType = new Header { Name = "content-type", Value = expectedContentType };
-        var input = new Input { Method = Method.POST, Url = "http://localhost:9191/endpoint", Headers = new Header[1] { contentType }, Message = message };
-        var options = new Options { ConnectionTimeoutSeconds = 60 };
-        var result = (HttpResponse)await Web.HttpRequest(input, options, CancellationToken.None);
-        var requestBody = _stubHttp.AssertWasCalled(called => called.Post("/endpoint")).LastRequest().Body;
-        var requestBodyByteArray = Encoding.UTF8.GetBytes(requestBody);
+            var contentType = new Header { Name = "content-type", Value = expectedContentType };
+            var input = new Input { Method = Method.POST, Url = "http://localhost:9191/endpoint", Headers = new Header[1] { contentType }, Message = message };
+            var options = new Options { ConnectionTimeoutSeconds = 60 };
+            var result = (HttpResponse)await Web.HttpRequest(input, options, CancellationToken.None);
+            var requestBody = _stubHttp.AssertWasCalled(called => called.Post("/endpoint")).LastRequest().Body;
+            var requestBodyByteArray = Encoding.UTF8.GetBytes(requestBody);
 
-        Assert.That(requestBodyByteArray, Is.EqualTo(utf8ByteArray));
+            Assert.That(requestBodyByteArray, Is.EqualTo(utf8ByteArray));
         }
-        
+
+        [Test]
+        public async Task SendBytesShouldPassExactBytes()
+        {
+            _stubHttp.Stub(x => x.Post("/data"))
+                .Return("OK")
+                .OK();
+
+            var expectedString = "Tää on se odotettu stringi!öÖööÄ";
+            var bytes = Encoding.UTF8.GetBytes(expectedString);
+            var input = new ByteInput
+            {
+                Method = SendMethod.POST,
+                Url = "http://localhost:9191/data",
+                Headers = new []
+                {
+                    new Header {Name= "Content-Type", Value = "text/plain; charset=utf-8"},
+                    new Header() {Name="Content-Length", Value = bytes.Length.ToString()}
+                },
+                ContentBytes = bytes
+            };
+
+            var options = new Options { ConnectionTimeoutSeconds = 60, Authentication = Authentication.OAuth, Token = "fooToken" };
+            var result = (HttpResponse) await Web.HttpSendBytes(input, options, CancellationToken.None);
+
+            Assert.That(result.StatusCode, Is.EqualTo((int)HttpStatusCode.OK));
+
+            var sentBody = _stubHttp.AssertWasCalled(called => called.Post("/data")).LastRequest().Body;
+            Assert.That(sentBody, Is.EqualTo(expectedString));
+        }
     }
 }
