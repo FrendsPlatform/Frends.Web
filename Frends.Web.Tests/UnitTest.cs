@@ -121,8 +121,21 @@ namespace Frends.Web.Tests
                .Return(expectedReturn)
                .OK();
 
-            var input = new Input { Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
-            var options = new Options { ConnectionTimeoutSeconds = 60, ThrowExceptionOnErrorResponse = true, Authentication = Authentication.Basic, Username = "Foo", Password = "Bar" };
+            var input = new Input
+            {
+                Method = Method.GET,
+                Url = "http://localhost:9191/endpoint",
+                Headers = new Header[0],
+                Message = ""
+            };
+            var options = new Options
+            {
+                ConnectionTimeoutSeconds = 60,
+                ThrowExceptionOnErrorResponse = true,
+                Authentication = Authentication.Basic,
+                Username = "Foo",
+                Password = "Bar"
+            };
             await Web.RestRequest(input, options, CancellationToken.None);
 
             var requestHeaders = _stubHttp.AssertWasCalled(called => called.Get("/endpoint")).LastRequest().RequestHead;
@@ -141,8 +154,19 @@ namespace Frends.Web.Tests
                .Return(expectedReturn)
                .OK();
 
-            var input = new Input { Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
-            var options = new Options { ConnectionTimeoutSeconds = 60, Authentication = Authentication.OAuth, Token = "fooToken" };
+            var input = new Input
+            {
+                Method = Method.GET,
+                Url = "http://localhost:9191/endpoint",
+                Headers = new Header[0],
+                Message = ""
+            };
+            var options = new Options
+            {
+                ConnectionTimeoutSeconds = 60,
+                Authentication = Authentication.OAuth,
+                Token = "fooToken"
+            };
             await Web.RestRequest(input, options, CancellationToken.None);
 
             var requestHeaders = _stubHttp.AssertWasCalled(called => called.Get("/endpoint")).LastRequest().RequestHead;
@@ -160,11 +184,24 @@ namespace Frends.Web.Tests
                 .Return(expectedReturn)
                 .OK();
             const string thumbprint = "ABCD";
-            var input = new Input { Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = "" };
-            var options = new Options { ConnectionTimeoutSeconds = 60, ThrowExceptionOnErrorResponse = true, Authentication = Authentication.ClientCertificate, CertificateThumbprint = thumbprint };
+            var input = new Input
+            {
+                Method = Method.GET,
+                Url = "http://localhost:9191/endpoint",
+                Headers = new Header[0],
+                Message = ""
+            };
+            var options = new Options
+            {
+                ConnectionTimeoutSeconds = 60,
+                ThrowExceptionOnErrorResponse = true,
+                Authentication = Authentication.ClientCertificate,
+                CertificateThumbprint = thumbprint
+            };
 
 
-            var ex = Assert.ThrowsAsync<FileNotFoundException>(async () => await Web.RestRequest(input, options, CancellationToken.None));
+            var ex = Assert.ThrowsAsync<FileNotFoundException>(async () =>
+                await Web.RestRequest(input, options, CancellationToken.None));
 
             Assert.That(ex.Message, Does.Contain($"Certificate with thumbprint: '{thumbprint}' not"));
         }
