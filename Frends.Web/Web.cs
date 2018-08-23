@@ -226,7 +226,7 @@ namespace Frends.Web
 
     public class Web
     {
-        private static ConcurrentDictionary<int, HttpClient> ClientCache = new ConcurrentDictionary<int, HttpClient>();
+        private static ConcurrentDictionary<Options, HttpClient> ClientCache = new ConcurrentDictionary<Options, HttpClient>();
 
         /// <summary>
         /// For a more detailed documentation see: https://github.com/FrendsPlatform/Frends.Web#RestRequest
@@ -274,16 +274,14 @@ namespace Frends.Web
 
         private static HttpClient GetHttpClientForOptions(Options options)
         {
-            // TODO: Is getHashCode() good enough, or should we use a real hash func, like SHA-1?
-            var optionHash = options.GetHashCode();
-            return ClientCache.GetOrAdd(optionHash, (key) =>
+            return ClientCache.GetOrAdd(options, (opts) =>
             {
                 // might get called more than once if e.g. many process instances execute at once,
                 // but that should not matter much, as only one client will get cached
                 var handler = new WebRequestHandler();
-                handler.SetHandlerSettingsBasedOnOptions(options);
+                handler.SetHandlerSettingsBasedOnOptions(opts);
                 var httpClient = new HttpClient(handler);
-                httpClient.SetDefaultRequestHeadersBasedOnOptions(options);
+                httpClient.SetDefaultRequestHeadersBasedOnOptions(opts);
 
                 return httpClient;
             });
@@ -560,7 +558,7 @@ namespace Frends.Web
                 }
             }
 
-            //Do not automtically set expect 100-continue response header
+            //Do not automatically set expect 100-continue response header
             httpClient.DefaultRequestHeaders.ExpectContinue = false;
             httpClient.DefaultRequestHeaders.TryAddWithoutValidation("content-type", "application/json");
             httpClient.Timeout = TimeSpan.FromSeconds(Convert.ToDouble(options.ConnectionTimeoutSeconds));
