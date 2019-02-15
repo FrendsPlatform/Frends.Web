@@ -35,7 +35,7 @@ namespace Frends.Web
     /// </summary>
     public enum SendMethod
     {
-        POST, PUT, PATCH
+        POST, PUT, PATCH, DELETE
     }
 
     public enum Authentication
@@ -436,7 +436,7 @@ namespace Frends.Web
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            // Only POST, PUT, and PATCH can have content, otherwise the HttpClient will fail
+            // Only POST, PUT, PATCH and DELETE can have content, otherwise the HttpClient will fail
             var isContentAllowed = Enum.TryParse(method, ignoreCase: true, result: out SendMethod _);
 
             var request = new HttpRequestMessage(new HttpMethod(method), new Uri(url))
