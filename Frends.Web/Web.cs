@@ -563,10 +563,6 @@ namespace Frends.Web
             {
                 handler.ServerCertificateCustomValidationCallback = (a, b, c, d) => true;
             }
-
-            //Allow all endpoint types
-            handler.SslProtocols = SslProtocols.Tls12 | SslProtocols.Tls11 |
-                                   SslProtocols.Tls | SslProtocols.Ssl3;
         }
 
         internal static void SetDefaultRequestHeadersBasedOnOptions(this HttpClient httpClient, Options options)
