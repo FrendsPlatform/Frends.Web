@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -11,6 +10,7 @@ using System.Net;
 using System.Threading;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -224,9 +224,31 @@ namespace Frends.Web
         public int StatusCode { get; set; }
     }
 
+    public interface IHttpClientFactory
+    {
+        HttpClient CreateClient(Options options);
+    }
+    public class HttpClientFactory : IHttpClientFactory
+    {
+      
+        public HttpClient CreateClient(Options options)
+        {
+            var handler = new HttpClientHandler();
+            handler.SetHandlerSettingsBasedOnOptions(options);
+            return new HttpClient(handler);
+        }
+    }
+
     public class Web
     {
-        private static ConcurrentDictionary<Options, HttpClient> ClientCache = new ConcurrentDictionary<Options, HttpClient>();
+        private static readonly ConcurrentDictionary<Options, HttpClient> ClientCache = new ConcurrentDictionary<Options, HttpClient>();
+
+        public static void ClearClientCache()
+        {
+            ClientCache.Clear();
+        }
+        // For tests
+        public static IHttpClientFactory ClientFactory = new HttpClientFactory();
 
         /// <summary>
         /// For a more detailed documentation see: https://github.com/FrendsPlatform/Frends.Web#RestRequest
@@ -237,7 +259,6 @@ namespace Frends.Web
         public static async Task<object> RestRequest([PropertyTab] Input input, [PropertyTab] Options options, CancellationToken cancellationToken)
         {
             var httpClient = GetHttpClientForOptions(options);
-
             var headers = GetHeaderDictionary(input.Headers);
             using (var content = GetContent(input, headers))
             {
@@ -274,13 +295,12 @@ namespace Frends.Web
 
         private static HttpClient GetHttpClientForOptions(Options options)
         {
+           
             return ClientCache.GetOrAdd(options, (opts) =>
             {
                 // might get called more than once if e.g. many process instances execute at once,
                 // but that should not matter much, as only one client will get cached
-                var handler = new WebRequestHandler();
-                handler.SetHandlerSettingsBasedOnOptions(opts);
-                var httpClient = new HttpClient(handler);
+                var httpClient = ClientFactory.CreateClient(options);
                 httpClient.SetDefaultRequestHeadersBasedOnOptions(opts);
 
                 return httpClient;
@@ -314,9 +334,9 @@ namespace Frends.Web
 
                 var response = new HttpResponse()
                 {
-                    Body = await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false),
+                    Body = responseMessage.Content != null ? await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false) : null,
                     StatusCode = (int)responseMessage.StatusCode,
-                    Headers = GetResponseHeaderDictionary(responseMessage.Headers, responseMessage.Content.Headers)
+                    Headers = GetResponseHeaderDictionary(responseMessage.Headers, responseMessage.Content?.Headers)
                 };
 
                 if (!responseMessage.IsSuccessStatusCode && options.ThrowExceptionOnErrorResponse)
@@ -418,7 +438,7 @@ namespace Frends.Web
         private static Dictionary<string, string> GetResponseHeaderDictionary(HttpResponseHeaders responseMessageHeaders, HttpContentHeaders contentHeaders)
         {
             var responseHeaders = responseMessageHeaders.ToDictionary(h => h.Key, h => string.Join(";", h.Value));
-            var allHeaders = contentHeaders.ToDictionary(h => h.Key, h => string.Join(";", h.Value));
+            var allHeaders = contentHeaders?.ToDictionary(h => h.Key, h => string.Join(";", h.Value)) ?? new Dictionary<string, string>();
             responseHeaders.ToList().ForEach(x => allHeaders[x.Key] = x.Value);
             return allHeaders;
         }
@@ -452,6 +472,7 @@ namespace Frends.Web
                 if (!requestHeaderAddedSuccessfully && request.Content != null)
                 {
                     //Could not add to request headers try to add to content headers
+                    // this check is probably not needed anymore as the new HttpClient does not seem fail on malformed headers
                     var contentHeaderAddedSuccessfully = content.Headers.TryAddWithoutValidation(header.Key, header.Value);
                     if (!contentHeaderAddedSuccessfully)
                     {
@@ -462,6 +483,7 @@ namespace Frends.Web
 
             var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
+            // this check is probably not needed anymore as the new HttpClient does not fail on invalid charsets
             if (options.AllowInvalidResponseContentTypeCharSet && response.Content.Headers?.ContentType != null)
             {
                 response.Content.Headers.ContentType.CharSet = null;
@@ -505,7 +527,7 @@ namespace Frends.Web
 
     public static class Extensions
     {
-        internal static void SetHandlerSettingsBasedOnOptions(this WebRequestHandler handler, Options options)
+        internal static void SetHandlerSettingsBasedOnOptions(this HttpClientHandler handler, Options options)
         {
             switch (options.Authentication)
             {
@@ -532,12 +554,8 @@ namespace Frends.Web
 
             if (options.AllowInvalidCertificate)
             {
-                handler.ServerCertificateValidationCallback = (a, b, c, d) => true;
+                handler.ServerCertificateCustomValidationCallback = (a, b, c, d) => true;
             }
-
-            //Allow all endpoint types
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 |
-                                                   SecurityProtocolType.Tls | SecurityProtocolType.Ssl3;
         }
 
         internal static void SetDefaultRequestHeadersBasedOnOptions(this HttpClient httpClient, Options options)
