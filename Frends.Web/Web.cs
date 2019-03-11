@@ -226,22 +226,16 @@ namespace Frends.Web
 
     public interface IHttpClientFactory
     {
-        HttpClient CreateClient(HttpClientHandler handler, Options options);
-        HttpClientHandler CreateHandler(Options options);
+        HttpClient CreateClient(Options options);
     }
     public class HttpClientFactory : IHttpClientFactory
     {
       
-        public HttpClient CreateClient(HttpClientHandler handler, Options options)
-        {
-            return new HttpClient(handler);
-        }
-
-        public HttpClientHandler CreateHandler(Options options)
+        public HttpClient CreateClient(Options options)
         {
             var handler = new HttpClientHandler();
             handler.SetHandlerSettingsBasedOnOptions(options);
-            return handler;
+            return new HttpClient(handler);
         }
     }
 
@@ -306,8 +300,7 @@ namespace Frends.Web
             {
                 // might get called more than once if e.g. many process instances execute at once,
                 // but that should not matter much, as only one client will get cached
-                var httpHandler = ClientFactory.CreateHandler(options);
-                var httpClient = ClientFactory.CreateClient(httpHandler, options);
+                var httpClient = ClientFactory.CreateClient(options);
                 httpClient.SetDefaultRequestHeadersBasedOnOptions(opts);
 
                 return httpClient;

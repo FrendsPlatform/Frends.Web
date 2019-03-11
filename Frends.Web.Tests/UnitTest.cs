@@ -37,15 +37,10 @@ namespace Frends.Web.Tests
         {
             _mockHttpMessageHandler = mockHttpMessageHandler;
         }
-        public HttpClient CreateClient(HttpClientHandler handler, Options options)
+        public HttpClient CreateClient(Options options)
         {
            return _mockHttpMessageHandler.ToHttpClient();
 
-        }
-
-        public HttpClientHandler CreateHandler(Options options)
-        {
-            return new HttpClientHandler();
         }
     }
 
