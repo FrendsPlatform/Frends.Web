@@ -1,12 +1,13 @@
 # Frends.Web
 FRENDS Tasks for HTTP REST requests.
 
+- [Frends.Web](#frendsweb)
 - [Installing](#installing)
 - [Tasks](#tasks)
-    - [RestRequest](#restrequest)
-    - [HttpRequest](#httprequest)
-    - [HttpRequestBytes](#httprequestbytes)
-    - [HttpSendBytes](#httpsendbytes)    
+  - [RestRequest](#restrequest)
+  - [HttpRequest](#httprequest)
+  - [HttpRequestBytes](#httprequestbytes)
+  - [HttpSendBytes](#httpsendbytes)
 - [License](#license)
 - [Building](#building)
 - [Contributing](#contributing)
@@ -134,17 +135,19 @@ Clone a copy of the repo
 
 Restore dependencies
 
-`nuget restore frends.web`
+`dotnet restore`
 
 Rebuild the project
 
-Run Tests with nunit3. Tests can be found under
+`dotnet build` 
 
-`Frends.Web.Tests\bin\Release\Frends.Web.Tests.dll`
+Run tests
+
+`dotnet test Frends.Web.Tests`
 
 Create a nuget package
 
-`nuget pack nuspec/Frends.Web.nuspec`
+`dotnet pack Frends.Web`
 
 Contributing
 ============
