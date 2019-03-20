@@ -199,6 +199,11 @@ namespace Frends.Web
                 return hashCode;
             }
         }
+        /// <summary>
+        /// If UseCookieContainer is set to false, using manually set header cookies.
+        /// </summary>
+        [DefaultValue(true)]
+        public bool UseCookieContainer { get; set; }
     }
 
     public class HttpResponse
@@ -234,6 +239,7 @@ namespace Frends.Web
         public HttpClient CreateClient(Options options)
         {
             var handler = new HttpClientHandler();
+            handler.UseCookies = options.UseCookieContainer;
             handler.SetHandlerSettingsBasedOnOptions(options);
             return new HttpClient(handler);
         }
