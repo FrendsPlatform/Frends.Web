@@ -49,6 +49,7 @@ Options:
 | Password                         | string                             | This field is available for Basic- and Windows Authentication.  |
 | Token                            | string                             | Token to be used in an OAuth request. The token will be added as a Authentication header. `Authorization Bearer '{Token}'` |
 | CertificateThumbprint            | string                             | This field is used with Client Certificate Authentication. The certificate needs to be found in Cert\CurrentUser\My store on the agent running the process |
+| Use Cookie Container             | bool                            | If UseCookieContainer is set to false, using manually set header cookies. Otherwise using Cookie Container. Default value is true. |
 
 Result:
 
@@ -85,6 +86,7 @@ Options:
 | Password                         | string                             | This field is available for Basic- and Windows Authentication.  |
 | Token                            | string                             | Token to be used in an OAuth request. The token will be added as a Authentication header. `Authorization Bearer '{Token}'` |
 | CertificateThumbprint            | string                             | This field is used with Client Certificate Authentication. The certificate needs to be found in Cert\CurrentUser\My store on the agent running the process |
+| Use Cookie Container             | bool                            | If UseCookieContainer is set to false, using manually set header cookies. Otherwise using Cookie Container. Default value is true. |
 
 Result:
 
