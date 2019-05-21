@@ -11,6 +11,9 @@
     },
     {
       "TaskMethod": "Frends.Web.Web.RestRequest"
+    },
+    {
+      "TaskMethod": "Frends.Web.Web.HttpSendAndReceiveBytes"
     }
   ]
 }

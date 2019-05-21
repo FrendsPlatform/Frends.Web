@@ -413,5 +413,94 @@ namespace Frends.Web.Tests
 
             _mockHttpMessageHandler.VerifyNoOutstandingExpectation();
         }
+
+        [Fact]
+        public async Task HttpSendAndReceiveBytesShouldPassExactBytes()
+        {
+
+            var expectedString = "Tää on se odotettu stringi!öÖööÄ";
+            var bytes = Encoding.UTF8.GetBytes(expectedString);
+            var input = new ByteInput
+            {
+                Method = SendMethod.POST,
+                Url = "http://localhost:9191/data",
+                Headers = new[]
+                {
+                    new Header {Name = "Content-Type", Value = "text/plain; charset=utf-8"},
+                    new Header() {Name = "Content-Length", Value = bytes.Length.ToString()}
+                },
+                ContentBytes = bytes
+            };
+
+            var options = new Options
+            { ConnectionTimeoutSeconds = 60, Authentication = Authentication.OAuth, Token = "fooToken" };
+
+            _mockHttpMessageHandler.Expect(HttpMethod.Post, input.Url).WithHeaders("Content-Type", "text/plain; charset=utf-8").WithContent(expectedString)
+                .Respond("text/plain", "foo åäö");
+
+            var result = (HttpByteResponse)await Web.HttpSendAndReceiveBytes(input, options, CancellationToken.None);
+
+            _mockHttpMessageHandler.VerifyNoOutstandingExpectation();
+        }
+
+        [Fact]
+        public async Task HttpSendAndReceiveBytesReturnShoulReturnEmpty()
+        {
+            var requestBody = "some request data";
+            var requestBytes = Encoding.UTF8.GetBytes(requestBody);
+
+            var input = new ByteInput {
+                Method = SendMethod.POST,
+                Url = "http://localhost:9191/endpoint",
+                Headers = new[] {
+                    new Header { Name = "Content-Type", Value = "text/plain; charset=utf-8" },
+                    new Header { Name ="Content-Length", Value = requestBytes.Length.ToString() }
+                },
+                ContentBytes = Encoding.UTF8.GetBytes("some request data")
+            };
+            var options = new Options { ConnectionTimeoutSeconds = 60 };
+
+            _mockHttpMessageHandler.When(input.Url)
+                .Respond("application/octet-stream", String.Empty);
+
+            var result = (HttpByteResponse)await Web.HttpSendAndReceiveBytes(input, options, CancellationToken.None);
+            Assert.Equal(0, result.BodySizeInMegaBytes);
+            Assert.Empty(result.BodyBytes);
+        }
+
+        [Fact]
+        public async Task HttpSendAndReceiveBytesShouldBeAbleToReturnBinary()
+        {
+
+            var testFileUriPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().CodeBase),
+                "TestFiles\\frends_favicon.png");
+            string localTestFilePath = new Uri(testFileUriPath).LocalPath;
+
+            var requestBody = "some request data";
+            var requestBytes = Encoding.UTF8.GetBytes(requestBody);
+
+            var input = new ByteInput
+            {
+                Method = SendMethod.POST,
+                Url = "http://localhost:9191/endpoint",
+                Headers = new[] {
+                    new Header { Name = "Content-Type", Value = "text/plain; charset=utf-8" },
+                    new Header { Name ="Content-Length", Value = requestBytes.Length.ToString() }
+                },
+                ContentBytes = Encoding.UTF8.GetBytes("some request data")
+            };
+
+            var options = new Options { ConnectionTimeoutSeconds = 60 };
+
+            var actualFileBytes = File.ReadAllBytes(localTestFilePath);
+            _mockHttpMessageHandler.When(input.Url)
+                .Respond("image/png", new MemoryStream(actualFileBytes));
+
+            var result = (HttpByteResponse)await Web.HttpSendAndReceiveBytes(input, options, CancellationToken.None);
+
+            Assert.NotEmpty(result.BodyBytes);
+
+            Assert.Equal(actualFileBytes, result.BodyBytes);
+        }
     }
 }
