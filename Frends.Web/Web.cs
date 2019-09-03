@@ -525,7 +525,23 @@ namespace Frends.Web
                 }
             }
 
-            var response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            HttpResponseMessage response;
+            try
+            {
+                response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+            }
+            catch (TaskCanceledException canceledException)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    // Cancellation is from outside -> Just throw 
+                    throw;
+                }
+
+                // Cancellation is from inside of the request, mostly likely a timeout
+                throw new Exception("HttpRequest was canceled, most likely due to a timeout.", canceledException);
+            }
+            
 
             // this check is probably not needed anymore as the new HttpClient does not fail on invalid charsets
             if (options.AllowInvalidResponseContentTypeCharSet && response.Content.Headers?.ContentType != null)
