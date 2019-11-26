@@ -158,6 +158,12 @@ namespace Frends.Web
         /// </summary>
         public bool ThrowExceptionOnErrorResponse { get; set; }
 
+        /// <summary>
+        /// If set to false, cookies must be handled manually. Defaults to true.
+        /// </summary>
+        [DefaultValue(true)]
+        public bool AutomaticCookieHandling { get; set; } = true;
+
         public bool Equals(Options other)
         {
             if (ReferenceEquals(null, other)) return false;
@@ -171,7 +177,8 @@ namespace Frends.Web
                    FollowRedirects == other.FollowRedirects &&
                    AllowInvalidCertificate == other.AllowInvalidCertificate &&
                    AllowInvalidResponseContentTypeCharSet == other.AllowInvalidResponseContentTypeCharSet &&
-                   ThrowExceptionOnErrorResponse == other.ThrowExceptionOnErrorResponse;
+                   ThrowExceptionOnErrorResponse == other.ThrowExceptionOnErrorResponse &&
+                   AutomaticCookieHandling == other.AutomaticCookieHandling;
         }
 
         public override bool Equals(object obj)
@@ -196,6 +203,7 @@ namespace Frends.Web
                 hashCode = (hashCode * 397) ^ AllowInvalidCertificate.GetHashCode();
                 hashCode = (hashCode * 397) ^ AllowInvalidResponseContentTypeCharSet.GetHashCode();
                 hashCode = (hashCode * 397) ^ ThrowExceptionOnErrorResponse.GetHashCode();
+                hashCode = (hashCode * 397) ^ AutomaticCookieHandling.GetHashCode();
                 return hashCode;
             }
         }
@@ -611,6 +619,7 @@ namespace Frends.Web
             }
 
             handler.AllowAutoRedirect = options.FollowRedirects;
+            handler.UseCookies = options.AutomaticCookieHandling;
 
             if (options.AllowInvalidCertificate)
             {
