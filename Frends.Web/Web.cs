@@ -10,7 +10,6 @@ using System.Net;
 using System.Threading;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -127,10 +126,45 @@ namespace Frends.Web
         public string Token { get; set; }
 
         /// <summary>
+        /// Specifies where the Client Certificate should be loaded from.
+        /// </summary>
+        [UIHint(nameof(Frends.Web.Authentication), "", Authentication.ClientCertificate)]
+        [DefaultValue(CertificateSource.CertificateStore)]
+        public CertificateSource ClientCertificateSource { get; set; }
+
+        /// <summary>
+        /// Path to the Client Certificate when using a file as the Certificate Source, pfx (pkcs12) files are recommended. For other supported formats, see
+        /// https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.x509certificates.x509certificate2collection.import?view=netframework-4.7.1
+        /// </summary>
+        [UIHint(nameof(Frends.Web.Authentication), "", Authentication.ClientCertificate)]
+        public string ClientCertificateFilePath { get; set; }
+
+        /// <summary>
+        /// Client certificate bytes as a base64 encoded string when using a string as the Certificate Source , pfx (pkcs12) format is recommended. For other supported formates, see
+        /// https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.x509certificates.x509certificate2collection.import?view=netframework-4.7.1
+        /// </summary>
+        [UIHint(nameof(Frends.Web.Authentication), "", Authentication.ClientCertificate)]
+        public string ClientCertificateInBase64 { get; set; }
+
+        /// <summary>
+        /// Key phrase (password) to access the certificate data when using a string or file as the Certificate Source
+        /// </summary>
+        [PasswordPropertyText]
+        [UIHint(nameof(Frends.Web.Authentication), "", Authentication.ClientCertificate)]
+        public string ClientCertificateKeyPhrase { get; set; }
+
+        /// <summary>
         /// Thumbprint for using client certificate authentication.
         /// </summary>
         [UIHint(nameof(Frends.Web.Authentication), "", Authentication.ClientCertificate)]
         public string CertificateThumbprint { get; set; }
+        
+        /// <summary>
+        /// Should the entire certificate chain be loaded from the certificate store and included in the request. Only valid when using Certificate Store as the Certificate Source 
+        /// </summary>
+        [UIHint(nameof(Frends.Web.Authentication), "", Authentication.ClientCertificate)]
+        [DefaultValue(true)]
+        public bool LoadEntireChainForCertificate { get; set; }
 
         /// <summary>
         /// Timeout in seconds to be used for the connection and operation.
@@ -164,6 +198,8 @@ namespace Frends.Web
         [DefaultValue(true)]
         public bool AutomaticCookieHandling { get; set; } = true;
 
+
+
         public bool Equals(Options other)
         {
             if (ReferenceEquals(null, other)) return false;
@@ -173,6 +209,9 @@ namespace Frends.Web
                    string.Equals(Password, other.Password) &&
                    string.Equals(Token, other.Token) &&
                    string.Equals(CertificateThumbprint, other.CertificateThumbprint) &&
+                   ClientCertificateSource == other.ClientCertificateSource &&
+                   ClientCertificateInBase64 == other.ClientCertificateInBase64 &&
+                   ClientCertificateFilePath == other.ClientCertificateFilePath &&
                    ConnectionTimeoutSeconds == other.ConnectionTimeoutSeconds &&
                    FollowRedirects == other.FollowRedirects &&
                    AllowInvalidCertificate == other.AllowInvalidCertificate &&
@@ -197,7 +236,10 @@ namespace Frends.Web
                 hashCode = (hashCode * 397) ^ (Username != null ? Username.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (Password != null ? Password.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (Token != null ? Token.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ ClientCertificateSource.GetHashCode();
                 hashCode = (hashCode * 397) ^ (CertificateThumbprint != null ? CertificateThumbprint.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (ClientCertificateInBase64 != null ? ClientCertificateInBase64.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (ClientCertificateFilePath != null ? ClientCertificateFilePath.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ ConnectionTimeoutSeconds;
                 hashCode = (hashCode * 397) ^ FollowRedirects.GetHashCode();
                 hashCode = (hashCode * 397) ^ AllowInvalidCertificate.GetHashCode();
@@ -207,6 +249,13 @@ namespace Frends.Web
                 return hashCode;
             }
         }
+    }
+
+    public enum CertificateSource
+    {
+        CertificateStore,
+        File,
+        String
     }
 
     public class HttpResponse
@@ -238,7 +287,7 @@ namespace Frends.Web
     }
     public class HttpClientFactory : IHttpClientFactory
     {
-      
+
         public HttpClient CreateClient(Options options)
         {
             var handler = new HttpClientHandler();
@@ -303,7 +352,7 @@ namespace Frends.Web
 
         private static HttpClient GetHttpClientForOptions(Options options)
         {
-           
+
             return ClientCache.GetOrAdd(options, (opts) =>
             {
                 // might get called more than once if e.g. many process instances execute at once,
@@ -454,7 +503,7 @@ namespace Frends.Web
             var httpClient = GetHttpClientForOptions(options);
             var headers = GetHeaderDictionary(input.Headers);
 
-            using(var content = GetContent(input))
+            using (var content = GetContent(input))
             {
                 var responseMessage = await GetHttpRequestResponseAsync(
                     httpClient,
@@ -476,7 +525,7 @@ namespace Frends.Web
                     Headers = GetResponseHeaderDictionary(responseMessage.Headers, responseMessage.Content.Headers)
                 };
 
-                if(!responseMessage.IsSuccessStatusCode && options.ThrowExceptionOnErrorResponse)
+                if (!responseMessage.IsSuccessStatusCode && options.ThrowExceptionOnErrorResponse)
                 {
                     throw new WebException($"Request to '{input.Url}' failed with status code {(int)responseMessage.StatusCode}.");
                 }
@@ -614,7 +663,7 @@ namespace Frends.Web
                         new NetworkCredential(domainAndUserName[1], options.Password, domainAndUserName[0]);
                     break;
                 case Authentication.ClientCertificate:
-                    handler.ClientCertificates.Add(GetCertificate(options.CertificateThumbprint));
+                    handler.ClientCertificates.AddRange(GetCertificates(options));
                     break;
             }
 
@@ -651,7 +700,59 @@ namespace Frends.Web
             httpClient.Timeout = TimeSpan.FromSeconds(Convert.ToDouble(options.ConnectionTimeoutSeconds));
         }
 
-        internal static X509Certificate2 GetCertificate(string thumbprint)
+        private static X509Certificate[] GetCertificates(Options options)
+        {
+            X509Certificate2[] certificates;
+
+            switch (options.ClientCertificateSource)
+            {
+                case CertificateSource.CertificateStore:
+                    var thumbprint = options.CertificateThumbprint;
+                    certificates = GetCertificatesFromStore(thumbprint, options.LoadEntireChainForCertificate);
+                    break;
+                case CertificateSource.File:
+                    certificates = GetCertificatesFromFile(options.ClientCertificateFilePath, options.ClientCertificateKeyPhrase);
+                    break;
+                case CertificateSource.String:
+                    certificates = GetCertificatesFromString(options.ClientCertificateInBase64, options.ClientCertificateKeyPhrase);
+                    break;
+                default:
+                    throw new Exception("Unsupported Certificate source");
+            }
+
+            return certificates.Cast<X509Certificate>().ToArray();
+        }
+
+        private static X509Certificate2[] GetCertificatesFromString(string certificateContentsBase64, string keyPhrase)
+        {
+            var certificateBytes = Convert.FromBase64String(certificateContentsBase64);
+
+            return LoadCertificatesFromBytes(certificateBytes, keyPhrase);
+        }
+
+        private static X509Certificate2[] LoadCertificatesFromBytes(byte[] certificateBytes, string keyPhrase)
+        {
+            var collection = new X509Certificate2Collection();
+
+            if (!string.IsNullOrEmpty(keyPhrase))
+            {
+                collection.Import(certificateBytes, keyPhrase, X509KeyStorageFlags.PersistKeySet);
+            }
+            else
+            {
+                collection.Import(certificateBytes, null, X509KeyStorageFlags.PersistKeySet);
+            }
+            return collection.Cast<X509Certificate2>().OrderByDescending(c => c.HasPrivateKey).ToArray();
+
+        }
+
+        private static X509Certificate2[] GetCertificatesFromFile(string clientCertificateFilePath, string keyPhrase)
+        {
+            return LoadCertificatesFromBytes(File.ReadAllBytes(clientCertificateFilePath), keyPhrase);
+        }
+
+        private static X509Certificate2[] GetCertificatesFromStore(string thumbprint,
+            bool loadEntireChain)
         {
             thumbprint = Regex.Replace(thumbprint, @"[^\da-zA-z]", string.Empty).ToUpper();
             var store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
@@ -661,10 +762,30 @@ namespace Frends.Web
                 var signingCert = store.Certificates.Find(X509FindType.FindByThumbprint, thumbprint, false);
                 if (signingCert.Count == 0)
                 {
-                    throw new FileNotFoundException($"Certificate with thumbprint: '{thumbprint}' not found in current user cert store.");
+                    throw new FileNotFoundException(
+                        $"Certificate with thumbprint: '{thumbprint}' not found in current user cert store.");
                 }
 
-                return signingCert[0];
+                var certificate = signingCert[0];
+
+
+                if (!loadEntireChain)
+                {
+                    return new [] {certificate};
+                }
+
+                var chain = new X509Chain();
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.Build(certificate);
+
+                // include the whole chain
+                var certificates = chain
+                    .ChainElements.Cast<X509ChainElement>()
+                    .Select(c => c.Certificate)
+                    .OrderByDescending(c => c.HasPrivateKey)
+                    .ToArray();
+
+                return certificates;
             }
             finally
             {
