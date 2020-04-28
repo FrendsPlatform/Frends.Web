@@ -158,7 +158,7 @@ namespace Frends.Web
         /// </summary>
         [UIHint(nameof(Frends.Web.Authentication), "", Authentication.ClientCertificate)]
         public string CertificateThumbprint { get; set; }
-        
+
         /// <summary>
         /// Should the entire certificate chain be loaded from the certificate store and included in the request. Only valid when using Certificate Store as the Certificate Source 
         /// </summary>
@@ -212,6 +212,7 @@ namespace Frends.Web
                    ClientCertificateSource == other.ClientCertificateSource &&
                    ClientCertificateInBase64 == other.ClientCertificateInBase64 &&
                    ClientCertificateFilePath == other.ClientCertificateFilePath &&
+                   LoadEntireChainForCertificate == other.LoadEntireChainForCertificate &&
                    ConnectionTimeoutSeconds == other.ConnectionTimeoutSeconds &&
                    FollowRedirects == other.FollowRedirects &&
                    AllowInvalidCertificate == other.AllowInvalidCertificate &&
@@ -240,6 +241,7 @@ namespace Frends.Web
                 hashCode = (hashCode * 397) ^ (CertificateThumbprint != null ? CertificateThumbprint.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (ClientCertificateInBase64 != null ? ClientCertificateInBase64.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (ClientCertificateFilePath != null ? ClientCertificateFilePath.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ LoadEntireChainForCertificate.GetHashCode();
                 hashCode = (hashCode * 397) ^ ConnectionTimeoutSeconds;
                 hashCode = (hashCode * 397) ^ FollowRedirects.GetHashCode();
                 hashCode = (hashCode * 397) ^ AllowInvalidCertificate.GetHashCode();
@@ -598,7 +600,7 @@ namespace Frends.Web
                 // Cancellation is from inside of the request, mostly likely a timeout
                 throw new Exception("HttpRequest was canceled, most likely due to a timeout.", canceledException);
             }
-            
+
 
             // this check is probably not needed anymore as the new HttpClient does not fail on invalid charsets
             if (options.AllowInvalidResponseContentTypeCharSet && response.Content.Headers?.ContentType != null)
@@ -755,8 +757,7 @@ namespace Frends.Web
             bool loadEntireChain)
         {
             thumbprint = Regex.Replace(thumbprint, @"[^\da-zA-z]", string.Empty).ToUpper();
-            var store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
-            try
+            using (var store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
             {
                 store.Open(OpenFlags.ReadOnly);
                 var signingCert = store.Certificates.Find(X509FindType.FindByThumbprint, thumbprint, false);
@@ -771,7 +772,7 @@ namespace Frends.Web
 
                 if (!loadEntireChain)
                 {
-                    return new [] {certificate};
+                    return new[] { certificate };
                 }
 
                 var chain = new X509Chain();
@@ -786,10 +787,6 @@ namespace Frends.Web
                     .ToArray();
 
                 return certificates;
-            }
-            finally
-            {
-                store.Close();
             }
         }
     }
