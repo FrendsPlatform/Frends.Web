@@ -45,12 +45,17 @@ Options:
 | Follow Redirects                 | bool                               | If FollowRedirects is set to false, all responses with an HTTP status code from 300 to 399 is returned to the application. Default is true.|
 | Allow Invalid Certificate        | bool                               | Do not throw an exception on certificate error. Setting this to true is discouraged in production. |
 | Throw Exception On ErrorResponse | bool                               | Throw a WebException if return code of request is not successful.  |
-| AllowInvalidResponseContentTypeCharSet | bool                         | Some Api's return faulty content-type charset header. If set to true this overrides the returned charset. |
+| Allow Invalid Response Content Type Char Set | bool                         | Some Api's return faulty content-type charset header. If set to true this overrides the returned charset. |
 | Username                         | string                             | This field is available for Basic- and Windows Authentication. If Windows Authentication is selected Username needs to be of format domain\username. Basic authentication will add a base64 encoded Authorization header consisting of Username and password fields. |
 | Password                         | string                             | This field is available for Basic- and Windows Authentication.  |
 | Token                            | string                             | Token to be used in an OAuth request. The token will be added as a Authentication header. `Authorization Bearer '{Token}'` |
-| CertificateThumbprint            | string                             | This field is used with Client Certificate Authentication. The certificate needs to be found in Cert\CurrentUser\My store on the agent running the process |
-| AutomaticCookieHandling          | bool                               | If set to false, cookies must be handled manually through Cookie -header. Defaults to true. |
+| Certificate Source | Enum(None, CertificateStore, File, String) | Where the certificate is loaded from. If None is selected and a Certificate Thumbprint has been provided, the certificate store will be used for backwards compatibility |
+| Certificate Thumbprint            | string                             | This field is used with Client Certificate Authentication. The certificate needs to be found in Cert\CurrentUser\My store on the agent running the process.  |
+| Load Entire Chain For Certificate | bool | Should the entire certificate chain be loaded and included in the request |
+| Client Certificate File Path | string | Path to the file containing the client certificate, all certificates in the file are loaded. Pfx (pkcs12) recommended, see [X509Certificate2Collection](https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.x509certificates.x509certificate2collection.import?view=netframework-4.7.1) for supported formats.  |
+| Client Certificate Key Phrase | string | Key phrase for loading the certificate from a file or base64 string |
+| Client Certificate In Base64 | string | Client certificate contents in base64 |
+| Automatic Cookie Handling          | bool                               | If set to false, cookies must be handled manually through Cookie -header. Defaults to true. |
 
 Result:
 
@@ -58,7 +63,7 @@ Result:
 |-------------------|---------------------------|----------------------|
 | Body              | JToken                    | Response body        |
 | Headers           | Dictionary<string,string> | Response headers     |
-| StatusCode        | int                       | Response status code | 
+| Status Code        | int                       | Response status code | 
 
 
 ## HttpRequest
@@ -82,12 +87,17 @@ Options:
 | Follow Redirects                 | bool                               | If FollowRedirects is set to false, all responses with an HTTP status code from 300 to 399 is returned to the application. Default is true.|
 | Allow Invalid Certificate        | bool                               | Do not throw an exception on certificate error. Setting this to true is discouraged in production. |
 | Throw Exception On ErrorResponse | bool                               | Throw a WebException if return code of request is not successful.  |
-| AllowInvalidResponseContentTypeCharSet | bool                         | Some Api's return faulty content-type charset header. If set to true this overrides the returned charset. |
+| Allow Invalid Response Content Type Char Set | bool                         | Some Api's return faulty content-type charset header. If set to true this overrides the returned charset. |
 | Username                         | string                             | This field is available for Basic- and Windows Authentication. If Windows Authentication is selected Username needs to be of format domain\username. Basic authentication will add a base64 encoded Authorization header consisting of Username and password fields. |
 | Password                         | string                             | This field is available for Basic- and Windows Authentication.  |
 | Token                            | string                             | Token to be used in an OAuth request. The token will be added as a Authentication header. `Authorization Bearer '{Token}'` |
-| CertificateThumbprint            | string                             | This field is used with Client Certificate Authentication. The certificate needs to be found in Cert\CurrentUser\My store on the agent running the process |
-| AutomaticCookieHandling          | bool                               | If set to false, cookies must be handled manually through Cookie -header. Defaults to true. |
+| Certificate Source | Enum(None, CertificateStore, File, String) | Where the certificate is loaded from. If None is selected and a Certificate Thumbprint has been provided, the certificate store will be used for backwards compatibility |
+| Certificate Thumbprint            | string                             | This field is used with Client Certificate Authentication. The certificate needs to be found in Cert\CurrentUser\My store on the agent running the process.  |
+| Load Entire Chain For Certificate | bool | Should the entire certificate chain be loaded and included in the request |
+| Client Certificate File Path | string | Path to the file containing the client certificate, all certificates in the file are loaded. Pfx (pkcs12) recommended, see [X509Certificate2Collection](https://docs.microsoft.com/en-us/dotnet/api/system.security.cryptography.x509certificates.x509certificate2collection.import?view=netframework-4.7.1) for supported formats.  |
+| Client Certificate Key Phrase | string | Key phrase for loading the certificate from a file or base64 string |
+| Client Certificate In Base64 | string | Client certificate contents in base64 |
+| Automatic Cookie Handling          | bool                               | If set to false, cookies must be handled manually through Cookie -header. Defaults to true. |
 
 Result:
 
