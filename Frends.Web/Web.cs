@@ -471,7 +471,7 @@ namespace Frends.Web
 
             using (var content = GetContent(input))
             {
-                var responseMessage = await GetHttpRequestResponseAsync(
+                using (var responseMessage = await GetHttpRequestResponseAsync(
                         httpClient,
                         input.Method.ToString(),
                         input.Url,
@@ -479,23 +479,25 @@ namespace Frends.Web
                         headers,
                         options,
                         cancellationToken)
-                    .ConfigureAwait(false);
-
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var response = new HttpResponse()
+                    .ConfigureAwait(false))
                 {
-                    Body = await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false),
-                    StatusCode = (int)responseMessage.StatusCode,
-                    Headers = GetResponseHeaderDictionary(responseMessage.Headers, responseMessage.Content.Headers)
-                };
 
-                if (!responseMessage.IsSuccessStatusCode && options.ThrowExceptionOnErrorResponse)
-                {
-                    throw new WebException($"Request to '{input.Url}' failed with status code {(int)responseMessage.StatusCode}. Response body: {response.Body}");
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var response = new HttpResponse()
+                    {
+                        Body = await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false),
+                        StatusCode = (int)responseMessage.StatusCode,
+                        Headers = GetResponseHeaderDictionary(responseMessage.Headers, responseMessage.Content.Headers)
+                    };
+
+                    if (!responseMessage.IsSuccessStatusCode && options.ThrowExceptionOnErrorResponse)
+                    {
+                        throw new WebException($"Request to '{input.Url}' failed with status code {(int)responseMessage.StatusCode}. Response body: {response.Body}");
+                    }
+
+                    return response;
                 }
-
-                return response;
             }
         }
 
