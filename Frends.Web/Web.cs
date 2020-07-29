@@ -321,7 +321,7 @@ namespace Frends.Web
             var headers = GetHeaderDictionary(input.Headers);
             using (var content = GetContent(input, headers))
             {
-                var responseMessage = await GetHttpRequestResponseAsync(
+                using (var responseMessage = await GetHttpRequestResponseAsync(
                         httpClient,
                         input.Method.ToString(),
                         input.Url,
@@ -329,25 +329,27 @@ namespace Frends.Web
                         headers,
                         options,
                         cancellationToken)
-                    .ConfigureAwait(false);
-
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var response = new RestResponse
+                    .ConfigureAwait(false))
                 {
-                    Body = TryParseRequestStringResultAsJToken(await responseMessage.Content.ReadAsStringAsync()
-                        .ConfigureAwait(false)),
-                    StatusCode = (int)responseMessage.StatusCode,
-                    Headers = GetResponseHeaderDictionary(responseMessage.Headers, responseMessage.Content.Headers)
-                };
 
-                if (!responseMessage.IsSuccessStatusCode && options.ThrowExceptionOnErrorResponse)
-                {
-                    throw new WebException(
-                        $"Request to '{input.Url}' failed with status code {(int)responseMessage.StatusCode}. Response body: {response.Body}");
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var response = new RestResponse
+                    {
+                        Body = TryParseRequestStringResultAsJToken(await responseMessage.Content.ReadAsStringAsync()
+                            .ConfigureAwait(false)),
+                        StatusCode = (int)responseMessage.StatusCode,
+                        Headers = GetResponseHeaderDictionary(responseMessage.Headers, responseMessage.Content.Headers)
+                    };
+
+                    if (!responseMessage.IsSuccessStatusCode && options.ThrowExceptionOnErrorResponse)
+                    {
+                        throw new WebException(
+                            $"Request to '{input.Url}' failed with status code {(int)responseMessage.StatusCode}. Response body: {response.Body}");
+                    }
+
+                    return response;
                 }
-
-                return response;
 
             }
         }
@@ -379,7 +381,7 @@ namespace Frends.Web
 
             using (var content = GetContent(input, headers))
             {
-                var responseMessage = await GetHttpRequestResponseAsync(
+                using (var responseMessage = await GetHttpRequestResponseAsync(
                         httpClient,
                         input.Method.ToString(),
                         input.Url,
@@ -387,24 +389,26 @@ namespace Frends.Web
                         headers,
                         options,
                         cancellationToken)
-                    .ConfigureAwait(false);
-
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var response = new HttpResponse()
+                    .ConfigureAwait(false))
                 {
-                    Body = responseMessage.Content != null ? await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false) : null,
-                    StatusCode = (int)responseMessage.StatusCode,
-                    Headers = GetResponseHeaderDictionary(responseMessage.Headers, responseMessage.Content?.Headers)
-                };
 
-                if (!responseMessage.IsSuccessStatusCode && options.ThrowExceptionOnErrorResponse)
-                {
-                    throw new WebException(
-                        $"Request to '{input.Url}' failed with status code {(int)responseMessage.StatusCode}. Response body: {response.Body}");
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var response = new HttpResponse()
+                    {
+                        Body = responseMessage.Content != null ? await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false) : null,
+                        StatusCode = (int)responseMessage.StatusCode,
+                        Headers = GetResponseHeaderDictionary(responseMessage.Headers, responseMessage.Content?.Headers)
+                    };
+
+                    if (!responseMessage.IsSuccessStatusCode && options.ThrowExceptionOnErrorResponse)
+                    {
+                        throw new WebException(
+                            $"Request to '{input.Url}' failed with status code {(int)responseMessage.StatusCode}. Response body: {response.Body}");
+                    }
+
+                    return response;
                 }
-
-                return response;
             }
         }
 
@@ -422,7 +426,7 @@ namespace Frends.Web
 
             using (var content = GetContent(input, headers))
             {
-                var responseMessage = await GetHttpRequestResponseAsync(
+                using (var responseMessage = await GetHttpRequestResponseAsync(
                         httpClient,
                         input.Method.ToString(),
                         input.Url,
@@ -430,24 +434,26 @@ namespace Frends.Web
                         headers,
                         options,
                         cancellationToken)
-                    .ConfigureAwait(false);
-
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var response = new HttpByteResponse()
+                    .ConfigureAwait(false))
                 {
-                    BodyBytes = await responseMessage.Content.ReadAsByteArrayAsync().ConfigureAwait(false),
-                    ContentType = responseMessage.Content.Headers.ContentType,
-                    StatusCode = (int)responseMessage.StatusCode,
-                    Headers = GetResponseHeaderDictionary(responseMessage.Headers, responseMessage.Content.Headers)
-                };
 
-                if (!responseMessage.IsSuccessStatusCode && options.ThrowExceptionOnErrorResponse)
-                {
-                    throw new WebException($"Request to '{input.Url}' failed with status code {(int)responseMessage.StatusCode}.");
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var response = new HttpByteResponse()
+                    {
+                        BodyBytes = await responseMessage.Content.ReadAsByteArrayAsync().ConfigureAwait(false),
+                        ContentType = responseMessage.Content.Headers.ContentType,
+                        StatusCode = (int)responseMessage.StatusCode,
+                        Headers = GetResponseHeaderDictionary(responseMessage.Headers, responseMessage.Content.Headers)
+                    };
+
+                    if (!responseMessage.IsSuccessStatusCode && options.ThrowExceptionOnErrorResponse)
+                    {
+                        throw new WebException($"Request to '{input.Url}' failed with status code {(int)responseMessage.StatusCode}.");
+                    }
+
+                    return response;
                 }
-
-                return response;
             }
         }
 
@@ -465,7 +471,7 @@ namespace Frends.Web
 
             using (var content = GetContent(input))
             {
-                var responseMessage = await GetHttpRequestResponseAsync(
+                using (var responseMessage = await GetHttpRequestResponseAsync(
                         httpClient,
                         input.Method.ToString(),
                         input.Url,
@@ -473,23 +479,25 @@ namespace Frends.Web
                         headers,
                         options,
                         cancellationToken)
-                    .ConfigureAwait(false);
-
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var response = new HttpResponse()
+                    .ConfigureAwait(false))
                 {
-                    Body = await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false),
-                    StatusCode = (int)responseMessage.StatusCode,
-                    Headers = GetResponseHeaderDictionary(responseMessage.Headers, responseMessage.Content.Headers)
-                };
 
-                if (!responseMessage.IsSuccessStatusCode && options.ThrowExceptionOnErrorResponse)
-                {
-                    throw new WebException($"Request to '{input.Url}' failed with status code {(int)responseMessage.StatusCode}. Response body: {response.Body}");
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var response = new HttpResponse()
+                    {
+                        Body = await responseMessage.Content.ReadAsStringAsync().ConfigureAwait(false),
+                        StatusCode = (int)responseMessage.StatusCode,
+                        Headers = GetResponseHeaderDictionary(responseMessage.Headers, responseMessage.Content.Headers)
+                    };
+
+                    if (!responseMessage.IsSuccessStatusCode && options.ThrowExceptionOnErrorResponse)
+                    {
+                        throw new WebException($"Request to '{input.Url}' failed with status code {(int)responseMessage.StatusCode}. Response body: {response.Body}");
+                    }
+
+                    return response;
                 }
-
-                return response;
             }
         }
 
@@ -507,7 +515,7 @@ namespace Frends.Web
 
             using (var content = GetContent(input))
             {
-                var responseMessage = await GetHttpRequestResponseAsync(
+                using (var responseMessage = await GetHttpRequestResponseAsync(
                     httpClient,
                     input.Method.ToString(),
                     input.Url,
@@ -515,24 +523,26 @@ namespace Frends.Web
                     headers,
                     options,
                     cancellationToken)
-                  .ConfigureAwait(false);
-
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var response = new HttpByteResponse()
+                  .ConfigureAwait(false))
                 {
-                    BodyBytes = await responseMessage.Content.ReadAsByteArrayAsync().ConfigureAwait(false),
-                    ContentType = responseMessage.Content.Headers.ContentType,
-                    StatusCode = (int)responseMessage.StatusCode,
-                    Headers = GetResponseHeaderDictionary(responseMessage.Headers, responseMessage.Content.Headers)
-                };
 
-                if (!responseMessage.IsSuccessStatusCode && options.ThrowExceptionOnErrorResponse)
-                {
-                    throw new WebException($"Request to '{input.Url}' failed with status code {(int)responseMessage.StatusCode}.");
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var response = new HttpByteResponse()
+                    {
+                        BodyBytes = await responseMessage.Content.ReadAsByteArrayAsync().ConfigureAwait(false),
+                        ContentType = responseMessage.Content.Headers.ContentType,
+                        StatusCode = (int)responseMessage.StatusCode,
+                        Headers = GetResponseHeaderDictionary(responseMessage.Headers, responseMessage.Content.Headers)
+                    };
+
+                    if (!responseMessage.IsSuccessStatusCode && options.ThrowExceptionOnErrorResponse)
+                    {
+                        throw new WebException($"Request to '{input.Url}' failed with status code {(int)responseMessage.StatusCode}.");
+                    }
+
+                    return response;
                 }
-
-                return response;
             }
 
         }
@@ -562,53 +572,55 @@ namespace Frends.Web
             // Only POST, PUT, PATCH and DELETE can have content, otherwise the HttpClient will fail
             var isContentAllowed = Enum.TryParse(method, ignoreCase: true, result: out SendMethod _);
 
-            var request = new HttpRequestMessage(new HttpMethod(method), new Uri(url))
+            using (var request = new HttpRequestMessage(new HttpMethod(method), new Uri(url))
             {
                 Content = isContentAllowed ? content : null,
-            };
-
-            //Clear default headers
-            content.Headers.Clear();
-            foreach (var header in headers)
+            })
             {
-                var requestHeaderAddedSuccessfully = request.Headers.TryAddWithoutValidation(header.Key, header.Value);
-                if (!requestHeaderAddedSuccessfully && request.Content != null)
+
+                //Clear default headers
+                content.Headers.Clear();
+                foreach (var header in headers)
                 {
-                    //Could not add to request headers try to add to content headers
-                    // this check is probably not needed anymore as the new HttpClient does not seem fail on malformed headers
-                    var contentHeaderAddedSuccessfully = content.Headers.TryAddWithoutValidation(header.Key, header.Value);
-                    if (!contentHeaderAddedSuccessfully)
+                    var requestHeaderAddedSuccessfully = request.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                    if (!requestHeaderAddedSuccessfully && request.Content != null)
                     {
-                        Trace.TraceWarning($"Could not add header {header.Key}:{header.Value}");
+                        //Could not add to request headers try to add to content headers
+                        // this check is probably not needed anymore as the new HttpClient does not seem fail on malformed headers
+                        var contentHeaderAddedSuccessfully = content.Headers.TryAddWithoutValidation(header.Key, header.Value);
+                        if (!contentHeaderAddedSuccessfully)
+                        {
+                            Trace.TraceWarning($"Could not add header {header.Key}:{header.Value}");
+                        }
                     }
                 }
-            }
 
-            HttpResponseMessage response;
-            try
-            {
-                response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            }
-            catch (TaskCanceledException canceledException)
-            {
-                if (cancellationToken.IsCancellationRequested)
+                HttpResponseMessage response;
+                try
                 {
-                    // Cancellation is from outside -> Just throw 
-                    throw;
+                    response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                }
+                catch (TaskCanceledException canceledException)
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        // Cancellation is from outside -> Just throw 
+                        throw;
+                    }
+
+                    // Cancellation is from inside of the request, mostly likely a timeout
+                    throw new Exception("HttpRequest was canceled, most likely due to a timeout.", canceledException);
                 }
 
-                // Cancellation is from inside of the request, mostly likely a timeout
-                throw new Exception("HttpRequest was canceled, most likely due to a timeout.", canceledException);
+
+                // this check is probably not needed anymore as the new HttpClient does not fail on invalid charsets
+                if (options.AllowInvalidResponseContentTypeCharSet && response.Content.Headers?.ContentType != null)
+                {
+                    response.Content.Headers.ContentType.CharSet = null;
+                }
+
+                return response;
             }
-
-
-            // this check is probably not needed anymore as the new HttpClient does not fail on invalid charsets
-            if (options.AllowInvalidResponseContentTypeCharSet && response.Content.Headers?.ContentType != null)
-            {
-                response.Content.Headers.ContentType.CharSet = null;
-            }
-            return response;
-
         }
 
         private static HttpContent GetContent(Input input, IDictionary<string, string> headers)
