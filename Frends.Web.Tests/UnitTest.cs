@@ -529,5 +529,36 @@ namespace Frends.Web.Tests
 
             Assert.Equal(actualFileBytes, result.BodyBytes);
         }
+
+        [Fact]
+        public async Task ShouldUseSameClientEvenIfOAuthTokenChanges()
+        {
+            var requestBytes = Encoding.UTF8.GetBytes("some request data");
+
+            var input = new ByteInput
+            {
+                Method = SendMethod.POST,
+                Url = "http://localhost:9191/endpoint",
+                Headers = new[] {
+                    new Header { Name = "Content-Type", Value = "text/plain; charset=utf-8" },
+                    new Header { Name ="Content-Length", Value = requestBytes.Length.ToString() }
+                },
+                ContentBytes = requestBytes
+            };
+            var options = new Options { ConnectionTimeoutSeconds = 60, Authentication = Authentication.OAuth };
+
+            _mockHttpMessageHandler.When(input.Url)
+                .Respond("application/octet-stream", string.Empty);
+
+            for (var i = 0; i < 2; i++)
+            {
+                options.Token = i + "";
+                var result = (HttpByteResponse)await Web.HttpSendAndReceiveBytes(input, options, CancellationToken.None);
+                Assert.Equal(0, result.BodySizeInMegaBytes);
+                Assert.Empty(result.BodyBytes);
+            }
+
+            Assert.Equal(1, Web.ClientCache.GetCount());
+        }
     }
 }

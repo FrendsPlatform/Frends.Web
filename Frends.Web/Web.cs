@@ -10,6 +10,7 @@ using System.Net;
 using System.Threading;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Runtime.Caching;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -101,7 +102,7 @@ namespace Frends.Web
         public Header[] Headers { get; set; }
     }
 
-    public class Options : IEquatable<Options>
+    public class Options
     {
         /// <summary>
         /// Method of authenticating request
@@ -197,58 +198,6 @@ namespace Frends.Web
         /// </summary>
         [DefaultValue(true)]
         public bool AutomaticCookieHandling { get; set; } = true;
-
-
-
-        public bool Equals(Options other)
-        {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
-            return Authentication == other.Authentication &&
-                   string.Equals(Username, other.Username) &&
-                   string.Equals(Password, other.Password) &&
-                   string.Equals(CertificateThumbprint, other.CertificateThumbprint) &&
-                   ClientCertificateSource == other.ClientCertificateSource &&
-                   ClientCertificateInBase64 == other.ClientCertificateInBase64 &&
-                   ClientCertificateFilePath == other.ClientCertificateFilePath &&
-                   LoadEntireChainForCertificate == other.LoadEntireChainForCertificate &&
-                   ConnectionTimeoutSeconds == other.ConnectionTimeoutSeconds &&
-                   FollowRedirects == other.FollowRedirects &&
-                   AllowInvalidCertificate == other.AllowInvalidCertificate &&
-                   AllowInvalidResponseContentTypeCharSet == other.AllowInvalidResponseContentTypeCharSet &&
-                   ThrowExceptionOnErrorResponse == other.ThrowExceptionOnErrorResponse &&
-                   AutomaticCookieHandling == other.AutomaticCookieHandling;
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != this.GetType()) return false;
-            return Equals((Options)obj);
-        }
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                var hashCode = (int)Authentication;
-                hashCode = (hashCode * 397) ^ (Username != null ? Username.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (Password != null ? Password.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ ClientCertificateSource.GetHashCode();
-                hashCode = (hashCode * 397) ^ (CertificateThumbprint != null ? CertificateThumbprint.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (ClientCertificateInBase64 != null ? ClientCertificateInBase64.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (ClientCertificateFilePath != null ? ClientCertificateFilePath.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ LoadEntireChainForCertificate.GetHashCode();
-                hashCode = (hashCode * 397) ^ ConnectionTimeoutSeconds;
-                hashCode = (hashCode * 397) ^ FollowRedirects.GetHashCode();
-                hashCode = (hashCode * 397) ^ AllowInvalidCertificate.GetHashCode();
-                hashCode = (hashCode * 397) ^ AllowInvalidResponseContentTypeCharSet.GetHashCode();
-                hashCode = (hashCode * 397) ^ ThrowExceptionOnErrorResponse.GetHashCode();
-                hashCode = (hashCode * 397) ^ AutomaticCookieHandling.GetHashCode();
-                return hashCode;
-            }
-        }
     }
 
     public enum CertificateSource
@@ -298,11 +247,19 @@ namespace Frends.Web
 
     public class Web
     {
-        private static readonly ConcurrentDictionary<Options, HttpClient> ClientCache = new ConcurrentDictionary<Options, HttpClient>();
+        // For tests
+        public static readonly ObjectCache ClientCache = MemoryCache.Default;
+
+        private static readonly CacheItemPolicy _cachePolicy =  new CacheItemPolicy() { SlidingExpiration = TimeSpan.FromHours(1) };
+
 
         public static void ClearClientCache()
         {
-            ClientCache.Clear();
+            var cacheKeys = ClientCache.Select(kvp => kvp.Key).ToList();
+            foreach (var cacheKey in cacheKeys)
+            {
+                ClientCache.Remove(cacheKey);
+            }
         }
         // For tests
         public static IHttpClientFactory ClientFactory = new HttpClientFactory();
@@ -354,16 +311,29 @@ namespace Frends.Web
 
         private static HttpClient GetHttpClientForOptions(Options options)
         {
+            var cacheKey = GetHttpClientCacheKey(options);
 
-            return ClientCache.GetOrAdd(options, (opts) =>
+            if (ClientCache.Get(cacheKey) is HttpClient httpClient)
             {
-                // might get called more than once if e.g. many process instances execute at once,
-                // but that should not matter much, as only one client will get cached
-                var httpClient = ClientFactory.CreateClient(options);
-                httpClient.SetDefaultRequestHeadersBasedOnOptions(opts);
-
                 return httpClient;
-            });
+            }
+
+            httpClient = ClientFactory.CreateClient(options);
+            httpClient.SetDefaultRequestHeadersBasedOnOptions(options);
+
+            ClientCache.Add(cacheKey, httpClient, _cachePolicy);
+
+            return httpClient;
+        }
+
+        private static string GetHttpClientCacheKey(Options options)
+        {
+            // Includes everything except for options.Token, which is used on request level, not http client level
+            return $"{options.Authentication}:{options.Username}:{options.Password}:{options.ClientCertificateSource}"
+                   + $":{options.ClientCertificateFilePath}:{options.ClientCertificateInBase64}:{options.ClientCertificateKeyPhrase}"
+                   + $":{options.CertificateThumbprint}:{options.LoadEntireChainForCertificate}:{options.ConnectionTimeoutSeconds}"
+                   + $":{options.FollowRedirects}:{options.AllowInvalidCertificate}:{options.AllowInvalidResponseContentTypeCharSet}"
+                   + $":{options.ThrowExceptionOnErrorResponse}:{options.AutomaticCookieHandling}";
         }
 
         /// <summary>
