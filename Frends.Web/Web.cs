@@ -207,7 +207,6 @@ namespace Frends.Web
             return Authentication == other.Authentication &&
                    string.Equals(Username, other.Username) &&
                    string.Equals(Password, other.Password) &&
-                   string.Equals(Token, other.Token) &&
                    string.Equals(CertificateThumbprint, other.CertificateThumbprint) &&
                    ClientCertificateSource == other.ClientCertificateSource &&
                    ClientCertificateInBase64 == other.ClientCertificateInBase64 &&
@@ -236,7 +235,6 @@ namespace Frends.Web
                 var hashCode = (int)Authentication;
                 hashCode = (hashCode * 397) ^ (Username != null ? Username.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (Password != null ? Password.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (Token != null ? Token.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ ClientCertificateSource.GetHashCode();
                 hashCode = (hashCode * 397) ^ (CertificateThumbprint != null ? CertificateThumbprint.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ (ClientCertificateInBase64 != null ? ClientCertificateInBase64.GetHashCode() : 0);
@@ -318,7 +316,7 @@ namespace Frends.Web
         public static async Task<object> RestRequest([PropertyTab] Input input, [PropertyTab] Options options, CancellationToken cancellationToken)
         {
             var httpClient = GetHttpClientForOptions(options);
-            var headers = GetHeaderDictionary(input.Headers);
+            var headers = GetHeaderDictionary(input.Headers, options);
             using (var content = GetContent(input, headers))
             {
                 using (var responseMessage = await GetHttpRequestResponseAsync(
@@ -377,7 +375,7 @@ namespace Frends.Web
         public static async Task<object> HttpRequest([PropertyTab] Input input, [PropertyTab] Options options, CancellationToken cancellationToken)
         {
             var httpClient = GetHttpClientForOptions(options);
-            var headers = GetHeaderDictionary(input.Headers);
+            var headers = GetHeaderDictionary(input.Headers, options);
 
             using (var content = GetContent(input, headers))
             {
@@ -422,7 +420,7 @@ namespace Frends.Web
         public static async Task<object> HttpRequestBytes([PropertyTab]Input input, [PropertyTab] Options options, CancellationToken cancellationToken)
         {
             var httpClient = GetHttpClientForOptions(options);
-            var headers = GetHeaderDictionary(input.Headers);
+            var headers = GetHeaderDictionary(input.Headers, options);
 
             using (var content = GetContent(input, headers))
             {
@@ -467,7 +465,7 @@ namespace Frends.Web
         public static async Task<object> HttpSendBytes([PropertyTab]ByteInput input, [PropertyTab] Options options, CancellationToken cancellationToken)
         {
             var httpClient = GetHttpClientForOptions(options);
-            var headers = GetHeaderDictionary(input.Headers);
+            var headers = GetHeaderDictionary(input.Headers, options);
 
             using (var content = GetContent(input))
             {
@@ -511,7 +509,7 @@ namespace Frends.Web
         public static async Task<object> HttpSendAndReceiveBytes([PropertyTab]ByteInput input, [PropertyTab] Options options, CancellationToken cancellationToken)
         {
             var httpClient = GetHttpClientForOptions(options);
-            var headers = GetHeaderDictionary(input.Headers);
+            var headers = GetHeaderDictionary(input.Headers, options);
 
             using (var content = GetContent(input))
             {
@@ -556,8 +554,25 @@ namespace Frends.Web
             return allHeaders;
         }
 
-        private static IDictionary<string, string> GetHeaderDictionary(IEnumerable<Header> headers)
+        private static IDictionary<string, string> GetHeaderDictionary(Header[] headers, Options options)
         {
+            if (!headers.Any(header => header.Name.ToLower().Equals("authorization")))
+            {
+
+                var authHeader = new Header { Name = "Authorization" };
+                switch (options.Authentication)
+                {
+                    case Authentication.Basic:
+                        authHeader.Value = $"Basic {Convert.ToBase64String(Encoding.ASCII.GetBytes($"{options.Username}:{options.Password}"))}";
+                        headers = headers.Concat(new[] { authHeader }).ToArray();
+                        break;
+                    case Authentication.OAuth:
+                        authHeader.Value = $"Bearer {options.Token}";
+                        headers = headers.Concat(new[] { authHeader }).ToArray();
+                        break;
+                }
+            }
+
             //Ignore case for headers and key comparison
             return headers.ToDictionary(key => key.Name, value => value.Value, StringComparer.InvariantCultureIgnoreCase);
         }
@@ -692,22 +707,6 @@ namespace Frends.Web
 
         internal static void SetDefaultRequestHeadersBasedOnOptions(this HttpClient httpClient, Options options)
         {
-            if (options.Authentication == Authentication.Basic || options.Authentication == Authentication.OAuth)
-            {
-                switch (options.Authentication)
-                {
-                    case Authentication.Basic:
-                        httpClient.DefaultRequestHeaders.Authorization =
-                            new AuthenticationHeaderValue(
-                                "Basic",
-                                Convert.ToBase64String(Encoding.ASCII.GetBytes($"{options.Username}:{options.Password}")));
-                        break;
-                    case Authentication.OAuth:
-                        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", options.Token);
-                        break;
-                }
-            }
-
             //Do not automatically set expect 100-continue response header
             httpClient.DefaultRequestHeaders.ExpectContinue = false;
             httpClient.DefaultRequestHeaders.TryAddWithoutValidation("content-type", "application/json");

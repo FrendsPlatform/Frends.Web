@@ -202,6 +202,33 @@ namespace Frends.Web.Tests
             _mockHttpMessageHandler.VerifyNoOutstandingExpectation();
         }
 
+        [Theory]
+        [MemberData(nameof(TestDataSource.TestCases), MemberType = typeof(TestDataSource))]
+        public async Task AuthorizationHeaderShouldOverrideOption(
+            Func<Input, Options, CancellationToken, Task<object>> requestFunc)
+        {
+            const string expectedReturn = @"'FooBar'";
+
+            var input = new Input
+            {
+                Method = Method.GET,
+                Url = "http://localhost:9191/endpoint",
+                Headers = new[] { new Header() { Name = "Authorization", Value = "Basic fooToken" } },
+                Message = ""
+            };
+            var options = new Options
+            {
+                ConnectionTimeoutSeconds = 60,
+                Authentication = Authentication.OAuth,
+                Token = "barToken"
+            };
+
+            _mockHttpMessageHandler.Expect($"{BasePath}/endpoint").WithHeaders("Authorization", "Basic fooToken")
+                .Respond("application/json", expectedReturn);
+            await requestFunc(input, options, CancellationToken.None);
+            _mockHttpMessageHandler.VerifyNoOutstandingExpectation();
+        }
+
         [Fact]
         public async Task RequestShouldAddClientCertificate()
         {
