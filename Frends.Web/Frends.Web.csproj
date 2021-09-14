@@ -13,6 +13,7 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="4.3.0" />
+    <PackageReference Include="System.Runtime.Caching" Version="5.0.0" />
   </ItemGroup>
   <ItemGroup>
     <None Include="FrendsTaskMetadata.json"  Pack="true" PackagePath="/">
