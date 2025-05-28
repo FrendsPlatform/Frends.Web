@@ -315,7 +315,7 @@ namespace Frends.Web.Tests
         public async Task HttpRequestBodyReturnShouldBeOfTypeString()
         {
             const string expectedReturn = "<foo>BAR</foo>";
-     
+
             var input = new Input
                 {Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = ""};
             var options = new Options {ConnectionTimeoutSeconds = 60};
@@ -326,7 +326,7 @@ namespace Frends.Web.Tests
 
             Assert.Equal(expectedReturn, result.Body);
         }
-        
+
         [Fact]
         public async Task HttpRequestBytesReturnShoulReturnEmpty()
         {
@@ -345,8 +345,10 @@ namespace Frends.Web.Tests
         public async Task HttpRequestBytesShouldBeAbleToReturnBinary()
         {
 
-            var testFileUriPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().CodeBase),
-                "TestFiles\\frends_favicon.png");
+            var testFileUriPath = Path.Combine(
+                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+                "TestFiles",
+                "frends_favicon.png");
             string localTestFilePath = new Uri(testFileUriPath).LocalPath;
             var input = new Input
                 {Method = Method.GET, Url = "http://localhost:9191/endpoint", Headers = new Header[0], Message = ""};
@@ -360,14 +362,14 @@ namespace Frends.Web.Tests
 
             Assert.NotEmpty(result.BodyBytes);
 
-        
+
             Assert.Equal(actualFileBytes, result.BodyBytes);
         }
 
         [Fact]
         public async Task PatchShouldComeThroug()
         {
-            var message = "åäö";
+            var message = "ï¿½ï¿½ï¿½";
 
             var input = new Input
             {
@@ -379,7 +381,7 @@ namespace Frends.Web.Tests
             var options = new Options { ConnectionTimeoutSeconds = 60 };
 
             _mockHttpMessageHandler.Expect(new HttpMethod("PATCH"), input.Url).WithContent(message)
-                .Respond("text/plain", "foo åäö");
+                .Respond("text/plain", "foo bÃ¤r");
 
             await Web.HttpRequest(input, options, CancellationToken.None);
 
@@ -390,7 +392,7 @@ namespace Frends.Web.Tests
         public async Task RequestShouldSetEncodingWithContentTypeCharsetIgnoringCase()
         {
             var codePageName = "iso-8859-1";
-            var requestMessage = "åäö!";
+            var requestMessage = "bÃ¤r!";
             var expectedContentType = $"text/plain; charset={codePageName}";
 
             var contentType = new Header { Name = "cONTENT-tYpE", Value = expectedContentType };
@@ -404,7 +406,7 @@ namespace Frends.Web.Tests
             var options = new Options { ConnectionTimeoutSeconds = 60 };
 
             _mockHttpMessageHandler.Expect(HttpMethod.Post, input.Url).WithHeaders("cONTENT-tYpE", expectedContentType).WithContent(requestMessage)
-                .Respond("text/plain", "foo åäö");
+                .Respond("text/plain", "foo bÃ¤r");
 
 
             var result = (HttpResponse)await Web.HttpRequest(input, options, CancellationToken.None);
@@ -416,7 +418,7 @@ namespace Frends.Web.Tests
         public async Task SendBytesShouldPassExactBytes()
         {
 
-            var expectedString = "Tää on se odotettu stringi!öÖööÄ";
+            var expectedString = "TÃ¤Ã¤ on se odotettu stringi!Ã¶Ã¤Ã¥";
             var bytes = Encoding.UTF8.GetBytes(expectedString);
             var input = new ByteInput
             {
@@ -434,7 +436,7 @@ namespace Frends.Web.Tests
             { ConnectionTimeoutSeconds = 60, Authentication = Authentication.OAuth, Token = "fooToken" };
 
             _mockHttpMessageHandler.Expect(HttpMethod.Post, input.Url).WithHeaders("Content-Type", "text/plain; charset=utf-8").WithContent(expectedString)
-                .Respond("text/plain", "foo åäö");
+                .Respond("text/plain", "foo bÃ¤r");
 
             var result = (HttpResponse)await Web.HttpSendBytes(input, options, CancellationToken.None);
 
@@ -445,7 +447,7 @@ namespace Frends.Web.Tests
         public async Task HttpSendAndReceiveBytesShouldPassExactBytes()
         {
 
-            var expectedString = "Tää on se odotettu stringi!öÖööÄ";
+            var expectedString = "Tï¿½ï¿½ on se odotettu stringi!ï¿½ï¿½ï¿½ï¿½ï¿½";
             var bytes = Encoding.UTF8.GetBytes(expectedString);
             var input = new ByteInput
             {
@@ -463,7 +465,7 @@ namespace Frends.Web.Tests
             { ConnectionTimeoutSeconds = 60, Authentication = Authentication.OAuth, Token = "fooToken" };
 
             _mockHttpMessageHandler.Expect(HttpMethod.Post, input.Url).WithHeaders("Content-Type", "text/plain; charset=utf-8").WithContent(expectedString)
-                .Respond("text/plain", "foo åäö");
+                .Respond("text/plain", "foo ï¿½ï¿½ï¿½");
 
             var result = (HttpByteResponse)await Web.HttpSendAndReceiveBytes(input, options, CancellationToken.None);
 
@@ -499,8 +501,10 @@ namespace Frends.Web.Tests
         public async Task HttpSendAndReceiveBytesShouldBeAbleToReturnBinary()
         {
 
-            var testFileUriPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().CodeBase),
-                "TestFiles\\frends_favicon.png");
+            var testFileUriPath = Path.Combine(
+                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location),
+                "TestFiles",
+                "frends_favicon.png");
             string localTestFilePath = new Uri(testFileUriPath).LocalPath;
 
             var requestBody = "some request data";
