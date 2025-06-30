@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    # Allows manual triggering of the workflow
+  push:
+    branches:
+      - master
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '6.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Test
+      run: dotnet test --configuration Release --no-build --verbosity normal
+
+    - name: Get version from project
+      id: get_version
+      run: |
+        VERSION=$(dotnet run --project Frends.Web -- --version 2>/dev/null || echo "1.0.0")
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Pack NuGet package
+      run: dotnet pack Frends.Web/Frends.Web.csproj --configuration Release --no-build --output ./artifacts
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ steps.get_version.outputs.version }}
+        name: Release v${{ steps.get_version.outputs.version }}
+        files: ./artifacts/*.nupkg
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
