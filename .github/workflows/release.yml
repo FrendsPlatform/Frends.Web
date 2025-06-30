@@ -28,7 +28,7 @@ jobs:
       run: dotnet build --configuration Release --no-restore
 
     - name: Test
-      run: dotnet test --configuration Release --no-build --verbosity normal
+      run: dotnet test --configuration Release --no-build --verbosity normal --framework net6.0
 
     - name: Get version from project
       id: get_version
