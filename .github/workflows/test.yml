@@ -30,3 +30,9 @@ jobs:
 
     - name: Test
       run: dotnet test --no-build --verbosity normal --framework net6.0
+
+    - name: Get version from project
+      id: get_version
+      run: |
+        VERSION=$(grep -oP '<Version>\K[^<]+' Frends.Web/Frends.Web.csproj)
+        echo "Version detected: $VERSION"

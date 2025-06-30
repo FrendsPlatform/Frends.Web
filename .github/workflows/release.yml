@@ -33,7 +33,7 @@ jobs:
     - name: Get version from project
       id: get_version
       run: |
-        VERSION=$(dotnet run --project Frends.Web -- --version 2>/dev/null || echo "1.0.0")
+        VERSION=$(grep -oP '<Version>\K[^<]+' Frends.Web/Frends.Web.csproj)
         echo "version=$VERSION" >> $GITHUB_OUTPUT
 
     - name: Pack NuGet package
